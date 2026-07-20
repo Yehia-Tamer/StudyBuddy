@@ -1,3 +1,4 @@
+import json
 import re
 from datetime import datetime
 from typing import Optional
@@ -61,6 +62,7 @@ class MessageResponse(BaseModel):
 
 class FlashCardResponse(BaseModel):
     id:int
+    type:str
     question:str
     answer:str
     created_at:datetime
@@ -68,3 +70,40 @@ class FlashCardResponse(BaseModel):
 
 class FlashCardGenerateRequest(BaseModel):
     count: int = 10 #how many flash cards
+
+class FlashCardAnswerRequest(BaseModel):
+    user_answer:str
+
+class FlashCardAnswerResponse(BaseModel):
+    correct:bool
+    correct_answer:str
+    feedback:str
+
+class StudyPlanGenerateRequest(BaseModel):
+    document_ids: list[int]
+
+class StudyPlanItemResponse(BaseModel):
+    id: int
+    topic: str
+    priority: str
+    estimated_time: int
+    subtopics: list[str]
+    completed:bool
+
+    model_config = ConfigDict(from_attributes=True)
+
+    @field_validator('subtopics', mode='before')
+    @classmethod
+    def parse_subtopics(cls, value):
+        if isinstance(value, str):
+            return json.loads(value)
+        return value
+
+class StudyPlanResponse(BaseModel):
+    id:int
+    created_at:datetime
+    items:list[StudyPlanItemResponse]
+    model_config = ConfigDict(from_attributes=True)
+
+class StudyPlanItemUpdate(BaseModel):
+    completed:bool

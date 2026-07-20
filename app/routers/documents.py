@@ -21,6 +21,10 @@ def upload_document(file:UploadFile=File(...),current_user:schemas.UserResponse=
 def generate_flashcards(request:schemas.FlashCardGenerateRequest,document_id:int,current_user:schemas.UserResponse=Depends(oauth2.get_current_user),db:Session=Depends(database.get_db)):
     return flashcards.generate_and_save_flashcards(document_id,current_user.id,request.count,db)
 
-@router.get('{document_id}/flashcards',status_code=status.HTTP_200_OK,response_model=List[schemas.FlashCardResponse])
+@router.get('/{document_id}/flashcards',status_code=status.HTTP_200_OK,response_model=List[schemas.FlashCardResponse])
 def get_flashcards(document_id:int,current_user:schemas.UserResponse=Depends(oauth2.get_current_user),db:Session=Depends(database.get_db)):
     return flashcards.get_flashcards(document_id,current_user.id,db)
+
+@router.post('/flashcards/{flashcard_id}/answer',status_code=status.HTTP_200_OK,response_model=schemas.FlashCardAnswerResponse)
+def answer_flashcard(request:schemas.FlashCardAnswerRequest,flashcard_id:int,current_user:schemas.UserResponse=Depends(oauth2.get_current_user),db:Session=Depends(database.get_db)):
+    return flashcards.answer_flashcard(flashcard_id,current_user.id,request.user_answer,db)

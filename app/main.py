@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routers import auth,documents,chat
+from app.routers import auth, documents, chat, study_plans
 from app import models,database
 
 api=FastAPI()
@@ -11,3 +11,4 @@ def root():
 api.include_router(auth.router)
 api.include_router(documents.router)
 api.include_router(chat.router)
+api.include_router(study_plans.router)

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Integer, Column, String, DateTime, ForeignKey
+from sqlalchemy import Integer, Column, String, DateTime, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 
 from .database import Base
@@ -15,6 +15,7 @@ class User(Base):
     documents = relationship("Document", back_populates="owner")
     conversations = relationship("Conversation", back_populates="owner")
     flashcards = relationship("FlashCard", back_populates="owner")
+    study_plan=relationship("StudyPlan", back_populates="owner")
 
 
 class Document(Base):
@@ -57,8 +58,32 @@ class FlashCard(Base):
     document_id = Column(Integer, ForeignKey("documents.id"))
     user_id=Column(Integer, ForeignKey("users.id"))
     question=Column(String,nullable=False)
+    type=Column(String,nullable=False,default='qa')
     answer=Column(String,nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     document = relationship("Document",back_populates="flashcards")
     owner = relationship("User", back_populates="flashcards")
+
+class StudyPlan(Base):
+    __tablename__="study_plans"
+    id=Column(Integer, primary_key=True)
+    user_id=Column(Integer, ForeignKey("users.id"))
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    owner=relationship("User", back_populates="study_plan")
+    items=relationship("StudyPlanItem",back_populates="study_plan",cascade="all, delete-orphan")
+
+class StudyPlanItem(Base):
+    __tablename__="study_plan_items"
+    id=Column(Integer, primary_key=True)
+    study_plan_id = Column(Integer, ForeignKey("study_plans.id"))
+    topic=Column(String,nullable=False)
+    priority=Column(String,nullable=False)
+    estimated_time=Column(Integer,nullable=False)
+    subtopics=Column(String,nullable=False)
+    completed=Column(Boolean,nullable=False,default=False)
+
+    study_plan = relationship("StudyPlan", back_populates="items")
+
+
