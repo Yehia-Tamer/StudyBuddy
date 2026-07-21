@@ -107,3 +107,49 @@ class StudyPlanResponse(BaseModel):
 
 class StudyPlanItemUpdate(BaseModel):
     completed:bool
+
+class QuizGenerateRequest(BaseModel):
+    document_ids: list[int]
+    count: int = 10
+    time_limit_minutes: int = 10
+
+    @field_validator('document_ids')
+    @classmethod
+    def validate_not_empty(cls, value):
+        if not value:
+            raise ValueError("Must specify at least one document ID")
+        return value
+
+
+class QuizItem(BaseModel):
+    type: str
+    question: str
+    answer: str
+
+
+class QuizResponse(BaseModel):
+    time_limit_minutes: int
+    items: list[QuizItem]
+
+
+class QuizAnswerItem(BaseModel):
+    question: str
+    correct_answer: str
+    user_answer: str
+
+
+class QuizGradeRequest(BaseModel):
+    answers: list[QuizAnswerItem]
+
+
+class QuizItemResult(BaseModel):
+    question: str
+    correct: bool
+    correct_answer: str
+    feedback: str
+
+
+class QuizGradeResponse(BaseModel):
+    score: int
+    total: int
+    results: list[QuizItemResult]
