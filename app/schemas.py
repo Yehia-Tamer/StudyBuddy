@@ -70,6 +70,7 @@ class FlashCardResponse(BaseModel):
 
 class FlashCardGenerateRequest(BaseModel):
     count: int = 10 #how many flash cards
+    document_id:int
 
 class FlashCardAnswerRequest(BaseModel):
     user_answer:str
@@ -111,7 +112,7 @@ class StudyPlanItemUpdate(BaseModel):
 class QuizGenerateRequest(BaseModel):
     document_ids: list[int]
     count: int = 10
-    time_limit_minutes: int = 10
+    difficulty:str
 
     @field_validator('document_ids')
     @classmethod
@@ -121,35 +122,31 @@ class QuizGenerateRequest(BaseModel):
         return value
 
 
-class QuizItem(BaseModel):
-    type: str
-    question: str
-    answer: str
-
+class QuizQuestionResponse(BaseModel):
+    id:int
+    type:str
+    question:str
+    answer:str
 
 class QuizResponse(BaseModel):
-    time_limit_minutes: int
-    items: list[QuizItem]
-
-
-class QuizAnswerItem(BaseModel):
-    question: str
-    correct_answer: str
-    user_answer: str
-
+    id:int
+    topic:str
+    created_at:datetime
+    time_estimate_minutes:int
+    difficulty:str
+    question_count:int
+    questions:list[QuizQuestionResponse]
+    model_config = ConfigDict(from_attributes=True)
 
 class QuizGradeRequest(BaseModel):
-    answers: list[QuizAnswerItem]
+    answers:list[str]
 
-
-class QuizItemResult(BaseModel):
-    question: str
-    correct: bool
-    correct_answer: str
-    feedback: str
-
+class QuestionGradeResponse(BaseModel):
+    correct:bool
+    correct_answer:str
+    feedback:str
 
 class QuizGradeResponse(BaseModel):
-    score: int
-    total: int
-    results: list[QuizItemResult]
+    score:int
+    total:int
+    results:list[QuestionGradeResponse]

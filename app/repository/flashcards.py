@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from app import models
-from app.rag import chain as rag_chain
+from app.rag.chains import flashcard_chain
 
 
 def generate_and_save_flashcards(document_id:int,user_id:int,count:int,db:Session):
@@ -13,7 +13,7 @@ def generate_and_save_flashcards(document_id:int,user_id:int,count:int,db:Sessio
     if document.user_id!=user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User not authorized")
 
-    generated=rag_chain.generate_flashcards(user_id,document_id,count)
+    generated=flashcard_chain.generate_flashcards(user_id,document_id,count)
 
     saved_flashcards=[]
 
@@ -49,7 +49,7 @@ def answer_flashcard(flashcard_id,user_id,user_answer:str,db:Session):
     if flashcard.user_id!=user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User not authorized")
 
-    result=rag_chain.grade_flashcard_answer(flashcard.question,flashcard.answer,user_answer)
+    result=flashcard_chain.grade_flashcard_answer(flashcard.question,flashcard.answer,user_answer)
 
     return {
         "correct": result["correct"],

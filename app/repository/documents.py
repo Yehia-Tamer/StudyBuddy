@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from starlette import status
 
 from app import models
-from app.rag import loader, vectorstore,chain
+from app.rag import loader, vectorstore
 
 UPLOAD_DIR = "uploads"
 

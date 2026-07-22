@@ -17,11 +17,11 @@ def get_all_documents(current_user:schemas.UserResponse=Depends(oauth2.get_curre
 def upload_document(file:UploadFile=File(...),current_user:schemas.UserResponse=Depends(oauth2.get_current_user),db:Session=Depends(database.get_db)):
     return documents.create_document(file,current_user.id,db)
 
-@router.post('/{document_id}/flashcards',status_code=status.HTTP_201_CREATED,response_model=List[schemas.FlashCardResponse])
-def generate_flashcards(request:schemas.FlashCardGenerateRequest,document_id:int,current_user:schemas.UserResponse=Depends(oauth2.get_current_user),db:Session=Depends(database.get_db)):
-    return flashcards.generate_and_save_flashcards(document_id,current_user.id,request.count,db)
+@router.post('/flashcards',status_code=status.HTTP_201_CREATED,response_model=List[schemas.FlashCardResponse])
+def generate_flashcards(request:schemas.FlashCardGenerateRequest,current_user:schemas.UserResponse=Depends(oauth2.get_current_user),db:Session=Depends(database.get_db)):
+    return flashcards.generate_and_save_flashcards(request.document_id,current_user.id,request.count,db)
 
-@router.get('/{document_id}/flashcards',status_code=status.HTTP_200_OK,response_model=List[schemas.FlashCardResponse])
+@router.get('/flashcards',status_code=status.HTTP_200_OK,response_model=List[schemas.FlashCardResponse])
 def get_flashcards(document_id:int,current_user:schemas.UserResponse=Depends(oauth2.get_current_user),db:Session=Depends(database.get_db)):
     return flashcards.get_flashcards(document_id,current_user.id,db)
 

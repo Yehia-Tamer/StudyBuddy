@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
-from app import models,rag
+from app import models
+from app.rag.chains import chat_chain
 
 
 def create_conversation(user_id: int, document_id: int | None, db: Session):
@@ -43,7 +44,7 @@ def send_message(conversation_id: int, user_id: int, role: str, content: str, db
 
     history=get_messages(conversation_id, user_id, db)
 
-    ai_answer=rag.chain.ask_question_with_fallback(content,user_id,conversation.document_id)
+    ai_answer=chat_chain.ask_question_with_fallback(content,user_id,conversation.document_id)
 
     ai_message=save_message(conversation_id,user_id,"assistant",ai_answer,db)
 

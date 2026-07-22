@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from starlette import status
 
 from app import models
-from app.rag import chain as rag_chain
+from app.rag.chains import study_plan_chain
 
 
 def generate_and_save_study_plan(user_id:int,document_ids:list[int],db:Session):
@@ -17,7 +17,7 @@ def generate_and_save_study_plan(user_id:int,document_ids:list[int],db:Session):
         if document.user_id!=user_id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="User not authorized")
 
-    generated_items=rag_chain.generate_study_plan(user_id,document_ids)
+    generated_items=study_plan_chain.generate_study_plan(user_id,document_ids)
 
     study_plan=models.StudyPlan(user_id=user_id)
     db.add(study_plan)

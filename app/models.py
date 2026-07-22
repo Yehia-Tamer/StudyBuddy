@@ -12,10 +12,11 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     email = Column(String, nullable=False, unique=True)
 
-    documents = relationship("Document", back_populates="owner")
-    conversations = relationship("Conversation", back_populates="owner")
-    flashcards = relationship("FlashCard", back_populates="owner")
-    study_plan=relationship("StudyPlan", back_populates="owner")
+    documents = relationship("Document", back_populates="owner",cascade="all, delete-orphan")
+    conversations = relationship("Conversation", back_populates="owner",cascade="all, delete-orphan")
+    flashcards = relationship("FlashCard", back_populates="owner",cascade="all, delete-orphan")
+    study_plan=relationship("StudyPlan", back_populates="owner",cascade="all, delete-orphan")
+    quizzes=relationship("Quiz",back_populates="owner",cascade="all, delete-orphan")
 
 
 class Document(Base):
@@ -86,4 +87,25 @@ class StudyPlanItem(Base):
 
     study_plan = relationship("StudyPlan", back_populates="items")
 
+class QuizQuestion(Base):
+    __tablename__ = "quiz-questions"
+    id = Column(Integer, primary_key=True)
+    quiz_id=Column(Integer,ForeignKey("quizzes.id"))
+    question=Column(String,nullable=False)
+    type=Column(String,nullable=False,default='qa')
+    answer=Column(String,nullable=False)
 
+    quiz = relationship("Quiz",back_populates="questions")
+
+class Quiz(Base):
+    __tablename__ = "quizzes"
+    id=Column(Integer,primary_key=True)
+    user_id=Column(Integer,ForeignKey("users.id"))
+    topic=Column(String,nullable=False)
+    difficulty=Column(String,nullable=False)
+    time_estimate_minutes=Column(Integer,nullable=False,default=30)
+    question_count=Column(Integer,nullable=False,default=10)
+    created_at=Column(DateTime,default=datetime.utcnow)
+
+    questions=relationship("QuizQuestion",back_populates="quiz")
+    owner=relationship("User",back_populates="quizzes")
