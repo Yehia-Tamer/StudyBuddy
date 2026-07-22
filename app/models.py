@@ -28,7 +28,8 @@ class Document(Base):
     page_count = Column(Integer)
 
     owner = relationship("User", back_populates="documents")
-    flashcards = relationship("FlashCard", back_populates="document")
+    flashcards = relationship("FlashCard", back_populates="document",cascade="all, delete-orphan")
+    conversations= relationship("Conversation",back_populates="document",cascade="all, delete-orphan")
 
 
 class Conversation(Base):
@@ -39,8 +40,8 @@ class Conversation(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     owner = relationship("User", back_populates="conversations")
-    document = relationship("Document")
-    messages = relationship("Message", back_populates="conversation")
+    document = relationship("Document",back_populates="conversations")
+    messages = relationship("Message", back_populates="conversation",cascade="all, delete-orphan")
 
 
 class Message(Base):
@@ -88,7 +89,7 @@ class StudyPlanItem(Base):
     study_plan = relationship("StudyPlan", back_populates="items")
 
 class QuizQuestion(Base):
-    __tablename__ = "quiz-questions"
+    __tablename__ = "quiz_questions"
     id = Column(Integer, primary_key=True)
     quiz_id=Column(Integer,ForeignKey("quizzes.id"))
     question=Column(String,nullable=False)
@@ -107,5 +108,5 @@ class Quiz(Base):
     question_count=Column(Integer,nullable=False,default=10)
     created_at=Column(DateTime,default=datetime.utcnow)
 
-    questions=relationship("QuizQuestion",back_populates="quiz")
+    questions=relationship("QuizQuestion",back_populates="quiz",cascade="all, delete-orphan")
     owner=relationship("User",back_populates="quizzes")

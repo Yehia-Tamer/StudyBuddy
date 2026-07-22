@@ -17,6 +17,10 @@ def get_all_documents(current_user:schemas.UserResponse=Depends(oauth2.get_curre
 def upload_document(file:UploadFile=File(...),current_user:schemas.UserResponse=Depends(oauth2.get_current_user),db:Session=Depends(database.get_db)):
     return documents.create_document(file,current_user.id,db)
 
+@router.delete('/{document_id}', status_code=status.HTTP_204_NO_CONTENT)
+def delete_document(document_id: int,current_user: schemas.UserResponse = Depends(oauth2.get_current_user),db: Session = Depends(database.get_db)):
+    documents.delete_document(document_id, current_user.id, db)
+
 @router.post('/flashcards',status_code=status.HTTP_201_CREATED,response_model=List[schemas.FlashCardResponse])
 def generate_flashcards(request:schemas.FlashCardGenerateRequest,current_user:schemas.UserResponse=Depends(oauth2.get_current_user),db:Session=Depends(database.get_db)):
     return flashcards.generate_and_save_flashcards(request.document_id,current_user.id,request.count,db)

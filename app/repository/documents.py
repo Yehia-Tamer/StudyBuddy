@@ -7,6 +7,7 @@ from starlette import status
 
 from app import models
 from app.rag import loader, vectorstore
+from app.rag.vectorstore import get_vectorstore
 
 UPLOAD_DIR = "uploads"
 
@@ -61,4 +62,17 @@ def create_document(file:UploadFile,user_id:int,db:Session) -> models.Document:
 
 def get_user_documents(user_id:int,db:Session):
     return db.query(models.Document).filter(models.Document.user_id == user_id).all()
+
+def delete_document(document_id: int, user_id: int, db: Session):
+    document = db.query(models.Document).filter(models.Document.id == document_id).first()
+    if not document:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+    if document.user_id != user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User not authorized")
+
+    vectorstore = get_vectorstore()
+    vectorstore.delete(where={"$and": [{"user_id": user_id}, {"document_id": document_id}]})
+
+    db.delete(document)
+    db.commit()
 
