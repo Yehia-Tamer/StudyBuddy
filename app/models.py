@@ -106,6 +106,7 @@ class Quiz(Base):
     difficulty=Column(String,nullable=False)
     time_estimate_minutes=Column(Integer,nullable=False,default=30)
     question_count=Column(Integer,nullable=False,default=10)
+    solved=Column(Boolean,nullable=False,default=False)
     created_at=Column(DateTime,default=datetime.utcnow)
 
     questions=relationship("QuizQuestion",back_populates="quiz",cascade="all, delete-orphan")

@@ -38,15 +38,15 @@ def save_message(conversation_id: int, user_id: int, role: str, content: str, db
     return message
 
 def send_message(conversation_id: int, user_id: int, role: str, content: str, db: Session):
-    conversation=get_conversation(conversation_id, user_id, db)
+    conversation = get_conversation(conversation_id, user_id, db)
 
     save_message(conversation_id, user_id, "user", content, db)
 
-    history=get_messages(conversation_id, user_id, db)
+    history = get_messages(conversation_id, user_id, db)[:-1]
 
-    ai_answer=chat_chain.ask_question_with_fallback(content,user_id,conversation.document_id)
+    ai_answer = chat_chain.ask_with_tools(content, user_id, conversation.document_id, history=history)
 
-    ai_message=save_message(conversation_id,user_id,"assistant",ai_answer,db)
+    ai_message = save_message(conversation_id, user_id, "assistant", ai_answer, db)
 
     return ai_message
 

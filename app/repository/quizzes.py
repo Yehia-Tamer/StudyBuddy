@@ -72,4 +72,8 @@ def grade_quiz(user_answers:list[str],quiz_id:int,user_id:int,db:Session):
         questions.append(quiz_question.question)
         answers.append(quiz_question.answer)
 
-    return quiz_chain.grade_quiz(questions,answers,user_answers)
+    result = quiz_chain.grade_quiz(questions,answers,user_answers)
+    quiz.solved=True
+    db.commit()
+
+    return result
