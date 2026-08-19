@@ -6,8 +6,11 @@ from sqlalchemy.orm import Session
 from starlette import status
 
 from app import models
-from app.rag import loader, vectorstore
-from app.rag.vectorstore import get_vectorstore
+from app.rag import vectorstore
+from app.rag.loaders import pdf_loader
+from app.rag.loaders.youtube_loader import get_video_id, load_youtube_document, YoutubeTranscriptError
+from app.rag.loaders.web_loader import load_web_document,WebArticleError
+from app.rag.vectorstore import get_vectorstore, add_documents
 
 UPLOAD_DIR = "uploads"
 
@@ -34,7 +37,7 @@ def create_document(file:UploadFile,user_id:int,db:Session) -> models.Document:
     file_path=save_uploaded_file(file,user_id)
 
     try:
-        chunks=loader.load_and_split(file_path)
+        chunks=pdf_loader.load_and_split(file_path)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to process PDF: {str(e)}")
 
@@ -52,13 +55,82 @@ def create_document(file:UploadFile,user_id:int,db:Session) -> models.Document:
     db.refresh(new_document)
 
     try:
-        vectorstore.add_documents(chunks,user_id=user_id,document_id=new_document.id)
+        add_documents(chunks,user_id=user_id,document_id=new_document.id)
     except Exception as e:
         db.delete(new_document)
         db.commit()
         raise HTTPException(status_code=500, detail=f"Failed to embed document: {str(e)}")
 
     return new_document
+
+def create_youtube_document(url:str,user_id:int,db:Session) -> models.Document:
+    video_id=get_video_id(url)
+    if not video_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Not a valid YouTube URL")
+    try:
+        chunks=load_youtube_document(url)
+    except YoutubeTranscriptError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=f"Failed to process YouTube Video: {e}")
+
+    if not chunks:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="No transcript found from this YouTube video")
+
+    new_document = models.Document(
+        user_id=user_id,
+        filename=f"YouTube: {video_id}",
+        page_count=None,
+        source_type="youtube",
+        source_url=url
+    )
+
+    db.add(new_document)
+    db.commit()
+    db.refresh(new_document)
+
+    try:
+        add_documents(chunks,user_id=user_id,document_id=new_document.id)
+    except Exception as e:
+        db.delete(new_document)
+        db.commit()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to embed document: {str(e)}")
+
+    return new_document
+
+def create_web_document(url:str,user_id:int,db:Session)->models.Document:
+    try:
+        chunks=load_web_document(url)
+    except WebArticleError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail=str(e))
+
+    title=chunks[0].metadata.get('title',url)
+
+    document=models.Document(
+        filename=title,
+        source_type='web',
+        source_url=url,
+        user_id=user_id,
+        page_count=None
+    )
+
+    db.add(document)
+    db.commit()
+    db.refresh(document)
+
+    for chunk in chunks:
+        chunk.metadata['user_id']=user_id
+        chunk.metadata['document_id']=document.id
+
+    try:
+        vectorstore=get_vectorstore()
+        vectorstore.add_documents(chunks)
+    except Exception as e:
+        db.delete(document)
+        db.commit()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=f"Failed to embed document: {e}")
+
+    return document
 
 def get_user_documents(user_id:int,db:Session):
     return db.query(models.Document).filter(models.Document.user_id == user_id).all()

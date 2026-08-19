@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Integer, Column, String, DateTime, ForeignKey, Boolean
+from sqlalchemy import Integer, Column, String, DateTime, ForeignKey, Boolean,Text
 from sqlalchemy.orm import relationship
 
 from .database import Base
@@ -25,7 +25,9 @@ class Document(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
     filename = Column(String)
     upload_date = Column(DateTime, default=datetime.utcnow)
-    page_count = Column(Integer)
+    page_count = Column(Integer,nullable=True)
+    source_type=Column(String, nullable=False,default="pdf")
+    source_url=Column(String,nullable=True)
 
     owner = relationship("User", back_populates="documents")
     flashcards = relationship("FlashCard", back_populates="document",cascade="all, delete-orphan")
@@ -51,6 +53,7 @@ class Message(Base):
     role = Column(String)  # "user" or "assistant"
     content = Column(String)
     timestamp = Column(DateTime, default=datetime.utcnow)
+    sources = Column(Text,nullable=True)
 
     conversation = relationship("Conversation", back_populates="messages")
 

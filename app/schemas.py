@@ -38,8 +38,14 @@ class DocumentResponse(BaseModel):
     id:int
     filename: str
     upload_date:datetime
-    page_count: int
+    page_count: int | None
     model_config = ConfigDict(from_attributes=True)
+
+class YouTubeDocumentRequest(BaseModel):
+    url:str
+
+class WebDocumentRequest(BaseModel):
+    url: str
 
 class ConversationCreate(BaseModel):
     document_id: Optional[int]=None
@@ -53,12 +59,31 @@ class ConversationResponse(BaseModel):
 class MessageCreate(BaseModel):
     content:str
 
+class SourceCitation(BaseModel):
+    source_type: str
+    source_url: str | None = None
+    timestamp_seconds: int | None = None
+    timestamp_delay: str | None = None
+    link: str | None = None
+    filename: str | None = None
+    page: int | None = None
+
 class MessageResponse(BaseModel):
     id:int
     role:str
     content:str
     timestamp:datetime
+    sources:list[SourceCitation]
     model_config = ConfigDict(from_attributes=True)
+
+    @field_validator('sources', mode='before')
+    @classmethod
+    def parse_sources(cls, value):
+        if isinstance(value, str):
+            return json.loads(value)
+        if value is None:
+            return []
+        return value
 
 class FlashCardResponse(BaseModel):
     id:int

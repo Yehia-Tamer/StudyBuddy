@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from app import models
 from app.rag.chains import chat_chain
-
+import json
 
 def create_conversation(user_id: int, document_id: int | None, db: Session):
     if document_id is not None:
@@ -28,14 +28,20 @@ def get_conversation(conversation_id: int, user_id: int, db: Session):
     return conversation
 
 
-def save_message(conversation_id: int, user_id: int, role: str, content: str, db: Session):
+def save_message(conversation_id: int, user_id: int, role: str, content: str, db: Session, sources: list | None = None):
     get_conversation(conversation_id, user_id, db)
 
-    message = models.Message(conversation_id=conversation_id, role=role, content=content)
+    message = models.Message(
+        conversation_id=conversation_id,
+        role=role,
+        content=content,
+        sources=json.dumps(sources) if sources is not None else None,
+    )
     db.add(message)
     db.commit()
     db.refresh(message)
     return message
+
 
 def send_message(conversation_id: int, user_id: int, role: str, content: str, db: Session):
     conversation = get_conversation(conversation_id, user_id, db)
@@ -44,9 +50,9 @@ def send_message(conversation_id: int, user_id: int, role: str, content: str, db
 
     history = get_messages(conversation_id, user_id, db)[:-1]
 
-    ai_answer = chat_chain.ask_with_tools(content, user_id, conversation.document_id, history=history)
+    ai_answer, sources = chat_chain.ask_with_tools(content, user_id, conversation.document_id, history=history)
 
-    ai_message = save_message(conversation_id, user_id, "assistant", ai_answer, db)
+    ai_message = save_message(conversation_id, user_id, "assistant", ai_answer, db, sources=sources)
 
     return ai_message
 

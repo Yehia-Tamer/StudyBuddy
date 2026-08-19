@@ -17,6 +17,14 @@ def get_all_documents(current_user:schemas.UserResponse=Depends(oauth2.get_curre
 def upload_document(file:UploadFile=File(...),current_user:schemas.UserResponse=Depends(oauth2.get_current_user),db:Session=Depends(database.get_db)):
     return documents.create_document(file,current_user.id,db)
 
+@router.post('/youtube/upload',status_code=status.HTTP_201_CREATED,response_model=schemas.DocumentResponse)
+def upload_youtube_document(request:schemas.YouTubeDocumentRequest,current_user:schemas.UserResponse=Depends(oauth2.get_current_user),db:Session=Depends(database.get_db)):
+    return documents.create_youtube_document(request.url,current_user.id,db)
+
+@router.post('/web/upload',status_code=status.HTTP_201_CREATED,response_model=schemas.DocumentResponse)
+def upload_web_document(request:schemas.WebDocumentRequest,current_user:schemas.UserResponse=Depends(oauth2.get_current_user),db:Session=Depends(database.get_db)):
+    return documents.create_web_document(request.url,current_user.id,db)
+
 @router.delete('/{document_id}', status_code=status.HTTP_204_NO_CONTENT)
 def delete_document(document_id: int,current_user: schemas.UserResponse = Depends(oauth2.get_current_user),db: Session = Depends(database.get_db)):
     documents.delete_document(document_id, current_user.id, db)
