@@ -43,7 +43,7 @@ def fetch_article(url: str) -> dict:
     return {"text": text, "title": title}
 
 
-def load_web_document(url: str, chunk_size: int = 1000, chunk_overlap: int = 200) -> list[Document]:
+def load_web_document(url: str, chunk_size: int = 2000, chunk_overlap: int = 300) -> list[Document]:
     article = fetch_article(url)
 
     splitter = RecursiveCharacterTextSplitter(

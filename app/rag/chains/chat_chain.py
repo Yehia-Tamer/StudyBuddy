@@ -17,7 +17,7 @@ def build_sources(docs:list[Document])->list[dict]:
 
     for doc in docs:
         meta=doc.metadata
-        source_type=meta.get("source_type","pdf")
+        source_type=meta.get("source_type")
 
         if source_type == 'youtube':
             key=("youtube",meta.get("source_url"),meta.get("timestamp_seconds"))
@@ -34,7 +34,41 @@ def build_sources(docs:list[Document])->list[dict]:
                 "timestamp_delay":f"{int(seconds) // 60}:{int(seconds) % 60:02d}",
                 "link": f"{source_url}&t={int(seconds)}s"
             })
-        else:
+
+        elif source_type=="audio":
+            key = ("audio", meta.get("filename"), meta.get("timestamp_seconds"))
+            if key in seen:
+                continue
+            seen.add(key)
+            seconds = round(meta.get("timestamp_seconds", 0))
+            sources.append({
+                "source_type": "audio",
+                "filename": meta.get("filename"),
+                "timestamp_seconds": seconds,
+                "timestamp_delay": f"{seconds // 60}:{seconds % 60:02d}",
+            })
+            
+        elif source_type == 'web':
+            key = ("web", meta.get("source_url"))
+            if key in seen:
+                continue
+            seen.add(key)
+            sources.append({
+                "source_type": "web",
+                "source_url": meta.get("source_url"),
+                "title": meta.get("title"),
+                "link": meta.get("source_url"),
+            })
+        elif source_type == 'pptx':
+            key = ("pptx", meta.get("total_slides"), meta.get("slide"))
+            if key in seen:
+                continue
+            seen.add(key)
+            sources.append({
+                "source_type": "pptx",
+                "slide": meta.get("slide", 0) + 1,  # 1-indexed for display, same as PDF page
+            })   
+        elif source_type=='pdf':
             key=("pdf",meta.get("source"),meta.get("page"))
             if key in seen:
                 continue
@@ -45,6 +79,9 @@ def build_sources(docs:list[Document])->list[dict]:
                 "filename": os.path.basename(source) if source else None,
                 "page":meta.get("page",0)+1
             })
+        else:
+            print("⚠️ UNKNOWN SOURCE TYPE:", source_type)
+            print("Metadata:", meta)
 
 
     return sources

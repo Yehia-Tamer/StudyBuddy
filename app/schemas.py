@@ -67,6 +67,7 @@ class SourceCitation(BaseModel):
     link: str | None = None
     filename: str | None = None
     page: int | None = None
+    slide: int | None = None
 
 class MessageResponse(BaseModel):
     id:int

@@ -22,3 +22,14 @@ _multi_retriever_key_cycle=cycle(MULTI_RETRIEVER_KEYS)
 
 def get_next_multi_retriever_key():
     return next(_multi_retriever_key_cycle)
+
+EMBEDDING_KEYS = [k for k in [
+    os.getenv("EMBEDDING_KEY_1"),
+    os.getenv("EMBEDDING_KEY_2"),
+    os.getenv("EMBEDDING_KEY_3"),
+] if k]
+
+_embedding_key_cycle=cycle(EMBEDDING_KEYS)
+
+def get_next_embedding_key():
+    return next(_embedding_key_cycle)

@@ -1,6 +1,7 @@
+from app.rag.loaders.pptx_loader import load_and_split_pptx
 
-import trafilatura as tr
 
-d=tr.fetch_url("https://en.wikipedia.org/wiki/Machine_learning")
+chunks=load_and_split_pptx(r"C:\Users\yehia Nour\Desktop\StudyBuddy\test.pptx")
 
-print(d is None)
+for chunk in chunks:
+    print(f"\nMetadata: {chunk.metadata}\n")

@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from app.routers import auth, documents, chat, study_plans,quizzes
 from app import models,database
 
+
 api=FastAPI()
 models.Base.metadata.create_all(bind=database.engine)
 @api.get("/", status_code=200)
