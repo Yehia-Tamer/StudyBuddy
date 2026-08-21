@@ -24,7 +24,7 @@ def get_quizzes(current_user:schemas.UserResponse=Depends(oauth2.get_current_use
 def get_quiz(quiz_id:int,current_user:schemas.UserResponse=Depends(oauth2.get_current_user),db:Session=Depends(database.get_db)):
     return quizzes.get_quiz(quiz_id,current_user.id,db)
 
-@router.post('{quiz_id}/grade',status_code=status.HTTP_201_CREATED,response_model=schemas.QuizGradeResponse)
+@router.post('/{quiz_id}/grade',status_code=status.HTTP_201_CREATED,response_model=schemas.QuizGradeResponse)
 def grade_quiz(request:schemas.QuizGradeRequest,quiz_id:int,current_user:schemas.UserResponse=Depends(oauth2.get_current_user),db:Session=Depends(database.get_db)):
     score,results=quizzes.grade_quiz(request.answers,quiz_id,current_user.id,db)
     return {
@@ -32,3 +32,7 @@ def grade_quiz(request:schemas.QuizGradeRequest,quiz_id:int,current_user:schemas
         "total":len(request.answers),
         "results":results
     }
+
+@router.delete('/{quiz_id}',status_code=status.HTTP_204_NO_CONTENT)
+def delete_quiz(quiz_id:int,current_user:schemas.UserResponse=Depends(oauth2.get_current_user),db:Session=Depends(database.get_db)):
+    quizzes.delete_quiz(quiz_id,current_user.id,db)

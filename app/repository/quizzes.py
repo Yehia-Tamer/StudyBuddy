@@ -16,7 +16,15 @@ def generate_and_save_quiz(user_id:int,document_ids:list[int],difficulty:str,cou
 
     questions,topic,time_estimate_minutes=quiz_chain.generate_quiz(user_id,document_ids,difficulty,count)
 
-    quiz=models.Quiz(user_id=user_id,topic=topic,difficulty=difficulty,question_count=count,time_estimate_minutes=time_estimate_minutes)
+    quiz=models.Quiz(
+        user_id=user_id,
+        topic=topic,
+        difficulty=difficulty,
+        question_count=count,
+        time_estimate_minutes=time_estimate_minutes,
+        documents=documents          
+    )    
+
     db.add(quiz)
     db.commit()
     db.refresh(quiz)
@@ -28,7 +36,7 @@ def generate_and_save_quiz(user_id:int,document_ids:list[int],difficulty:str,cou
             quiz_id=quiz.id,
             question=question["question"],
             type=question["type"],
-            answer=question["answer"]
+            answer=question["answer"],
         )
 
         db.add(quiz_question)
@@ -77,3 +85,9 @@ def grade_quiz(user_answers:list[str],quiz_id:int,user_id:int,db:Session):
     db.commit()
 
     return result
+
+def delete_quiz(quiz_id:int,user_id:int,db:Session):
+    quiz=get_quiz(quiz_id,user_id,db)
+
+    db.delete(quiz)
+    db.commit()

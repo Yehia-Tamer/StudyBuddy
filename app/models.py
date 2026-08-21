@@ -1,9 +1,28 @@
 from datetime import datetime
 
-from sqlalchemy import Integer, Column, String, DateTime, ForeignKey, Boolean,Text
+from sqlalchemy import Integer, Column, String, DateTime, ForeignKey, Boolean,Text,Table
 from sqlalchemy.orm import relationship
 
 from .database import Base
+
+quiz_documents = Table(
+    "quiz_documents", Base.metadata,
+    Column("quiz_id", Integer, ForeignKey("quizzes.id"), primary_key=True),
+    Column("document_id", Integer, ForeignKey("documents.id"), primary_key=True),
+)
+
+study_plan_documents = Table(
+    "study_plan_documents", Base.metadata,
+    Column("study_plan_id", Integer, ForeignKey("study_plans.id"), primary_key=True),
+    Column("document_id", Integer, ForeignKey("documents.id"), primary_key=True),
+)
+
+cheat_sheet_documents = Table(
+    "cheat_sheet_documents", Base.metadata,
+    Column("cheat_sheet_id", Integer, ForeignKey("cheat_sheets.id"), primary_key=True),
+    Column("document_id", Integer, ForeignKey("documents.id"), primary_key=True),
+)
+
 
 class User(Base):
     __tablename__ = "users"
@@ -15,9 +34,9 @@ class User(Base):
     documents = relationship("Document", back_populates="owner",cascade="all, delete-orphan")
     conversations = relationship("Conversation", back_populates="owner",cascade="all, delete-orphan")
     flashcards = relationship("FlashCard", back_populates="owner",cascade="all, delete-orphan")
-    study_plan=relationship("StudyPlan", back_populates="owner",cascade="all, delete-orphan")
+    study_plans = relationship("StudyPlan", back_populates="owner",cascade="all, delete-orphan")
     quizzes=relationship("Quiz",back_populates="owner",cascade="all, delete-orphan")
-
+    cheat_sheets=relationship("CheatSheet",back_populates="owner",cascade="all, delete-orphan")
 
 class Document(Base):
     __tablename__ = "documents"
@@ -32,7 +51,9 @@ class Document(Base):
     owner = relationship("User", back_populates="documents")
     flashcards = relationship("FlashCard", back_populates="document",cascade="all, delete-orphan")
     conversations= relationship("Conversation",back_populates="document",cascade="all, delete-orphan")
-
+    quizzes_used_in = relationship("Quiz", secondary=quiz_documents, back_populates="documents")
+    study_plans_used_in = relationship("StudyPlan", secondary=study_plan_documents, back_populates="documents")
+    cheat_sheets_used_in = relationship("CheatSheet", secondary=cheat_sheet_documents, back_populates="documents")
 
 class Conversation(Base):
     __tablename__ = "conversations"
@@ -76,8 +97,9 @@ class StudyPlan(Base):
     user_id=Column(Integer, ForeignKey("users.id"))
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    owner=relationship("User", back_populates="study_plan")
+    owner=relationship("User", back_populates="study_plans")
     items=relationship("StudyPlanItem",back_populates="study_plan",cascade="all, delete-orphan")
+    documents = relationship("Document", secondary=study_plan_documents, back_populates="study_plans_used_in")
 
 class StudyPlanItem(Base):
     __tablename__="study_plan_items"
@@ -114,3 +136,17 @@ class Quiz(Base):
 
     questions=relationship("QuizQuestion",back_populates="quiz",cascade="all, delete-orphan")
     owner=relationship("User",back_populates="quizzes")
+    documents = relationship("Document", secondary=quiz_documents, back_populates="quizzes_used_in")
+
+class CheatSheet(Base):
+    __tablename__="cheat_sheets"
+
+    id=Column(Integer,primary_key=True,index=True)
+    user_id=Column(Integer,ForeignKey("users.id"))
+    title=Column(String,nullable=False)
+    topic=Column(String,nullable=False)
+    content=Column(Text,nullable=False)
+    created_at=Column(DateTime,default=datetime.utcnow)
+
+    owner=relationship("User",back_populates="cheat_sheets")
+    documents = relationship("Document", secondary=cheat_sheet_documents, back_populates="cheat_sheets_used_in")

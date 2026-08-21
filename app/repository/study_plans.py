@@ -19,7 +19,7 @@ def generate_and_save_study_plan(user_id:int,document_ids:list[int],db:Session):
 
     generated_items=study_plan_chain.generate_study_plan(user_id,document_ids)
 
-    study_plan=models.StudyPlan(user_id=user_id)
+    study_plan=models.StudyPlan(user_id=user_id,documents=documents)
     db.add(study_plan)
     db.commit()
     db.refresh(study_plan)

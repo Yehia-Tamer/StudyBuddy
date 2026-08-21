@@ -3,7 +3,7 @@ import re
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, field_validator, ConfigDict, EmailStr
+from pydantic import BaseModel, field_validator, model_validator, ConfigDict, EmailStr
 
 
 class UserCreate(BaseModel):
@@ -130,7 +130,20 @@ class StudyPlanResponse(BaseModel):
     id:int
     created_at:datetime
     items:list[StudyPlanItemResponse]
+    document_ids: list[int]
     model_config = ConfigDict(from_attributes=True)
+
+    @model_validator(mode='before')
+    @classmethod
+    def extract_document_ids(cls, obj):
+        if hasattr(obj, 'documents'):
+            return {
+                "id": obj.id,
+                "created_at": obj.created_at,
+                "items": obj.items,
+                "document_ids": [d.id for d in obj.documents],
+            }
+        return obj
 
 class StudyPlanItemUpdate(BaseModel):
     completed:bool
@@ -162,7 +175,24 @@ class QuizResponse(BaseModel):
     difficulty:str
     question_count:int
     questions:list[QuizQuestionResponse]
+    document_ids: list[int]
     model_config = ConfigDict(from_attributes=True)
+
+    @model_validator(mode='before')
+    @classmethod
+    def extract_document_ids(cls, obj):
+        if hasattr(obj, 'documents'):
+            return {
+                "id": obj.id,
+                "topic": obj.topic,
+                "created_at": obj.created_at,
+                "time_estimate_minutes": obj.time_estimate_minutes,
+                "difficulty": obj.difficulty,
+                "question_count": obj.question_count,
+                "questions": obj.questions,
+                "document_ids": [d.id for d in obj.documents],
+            }
+        return obj
 
 class QuizGradeRequest(BaseModel):
     answers:list[str]
@@ -176,3 +206,30 @@ class QuizGradeResponse(BaseModel):
     score:int
     total:int
     results:list[QuestionGradeResponse]
+
+class CheatSheetGenerateRequest(BaseModel):
+    document_ids:list[int]
+
+class CheatSheetResponse(BaseModel):
+    id: int
+    title: str
+    topic: str
+    content: str
+    created_at: datetime
+    document_ids: list[int]
+    model_config = ConfigDict(from_attributes=True)
+
+    @model_validator(mode='before')
+    @classmethod
+    def extract_document_ids(cls, obj):
+        if hasattr(obj, 'documents'):
+            document_ids = [d.id for d in obj.documents]
+            return {
+                "id": obj.id,
+                "title": obj.title,
+                "topic": obj.topic,
+                "content": obj.content,
+                "created_at": obj.created_at,
+                "document_ids": document_ids,
+            }
+        return obj
