@@ -23,6 +23,12 @@ cheat_sheet_documents = Table(
     Column("document_id", Integer, ForeignKey("documents.id"), primary_key=True),
 )
 
+flashcard_documents=Table(
+    "flashcard_documents",Base.metadata,
+    Column("flashcard_id",Integer,ForeignKey("flashcards.id"),primary_key=True),
+    Column("document_id", Integer, ForeignKey("documents.id"), primary_key=True)
+)
+
 
 class User(Base):
     __tablename__ = "users"
@@ -49,8 +55,8 @@ class Document(Base):
     source_url=Column(String,nullable=True)
 
     owner = relationship("User", back_populates="documents")
-    flashcards = relationship("FlashCard", back_populates="document",cascade="all, delete-orphan")
     conversations= relationship("Conversation",back_populates="document",cascade="all, delete-orphan")
+    flashcards_used_in = relationship("FlashCard", secondary=flashcard_documents, back_populates="documents")
     quizzes_used_in = relationship("Quiz", secondary=quiz_documents, back_populates="documents")
     study_plans_used_in = relationship("StudyPlan", secondary=study_plan_documents, back_populates="documents")
     cheat_sheets_used_in = relationship("CheatSheet", secondary=cheat_sheet_documents, back_populates="documents")
@@ -81,14 +87,13 @@ class Message(Base):
 class FlashCard(Base):
     __tablename__ = "flashcards"
     id = Column(Integer, primary_key=True)
-    document_id = Column(Integer, ForeignKey("documents.id"))
     user_id=Column(Integer, ForeignKey("users.id"))
     question=Column(String,nullable=False)
     type=Column(String,nullable=False,default='qa')
     answer=Column(String,nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    document = relationship("Document",back_populates="flashcards")
+    documents = relationship("Document",secondary=flashcard_documents,back_populates="flashcards_used_in")
     owner = relationship("User", back_populates="flashcards")
 
 class StudyPlan(Base):

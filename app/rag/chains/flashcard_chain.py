@@ -35,12 +35,19 @@ Document content:
     partial_variables={"format_instructions": flashcard_parser.get_format_instructions()}
 )
 
-def generate_flashcards(user_id: int, document_id: int, count: int = 10):
+def generate_flashcards(user_id: int, document_ids: list[int], count: int = 10):
     vectorstore = get_vectorstore()
-    result = vectorstore.get(where={"$and": [{"user_id": user_id}, {"document_id": document_id}]})
+    doc_filters=[{"document_id":doc_id} for doc_id in document_ids]
+    where_filter={
+        "$and":[
+            {"user_id":user_id},
+            {"$or":doc_filters} if len(doc_filters) > 1 else doc_filters[0]
+        ]
+    }
+    result=vectorstore.get(where=where_filter)
     documents = result.get("documents") or []
-    context = "\n\n".join(documents)
-
+    context="\n\n".join(documents)
+    
     if not context:
         raise ValueError("No content found for this document")
 

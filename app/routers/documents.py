@@ -39,7 +39,7 @@ def delete_document(document_id: int,current_user: schemas.UserResponse = Depend
 
 @router.post('/flashcards',status_code=status.HTTP_201_CREATED,response_model=List[schemas.FlashCardResponse])
 def generate_flashcards(request:schemas.FlashCardGenerateRequest,current_user:schemas.UserResponse=Depends(oauth2.get_current_user),db:Session=Depends(database.get_db)):
-    return flashcards.generate_and_save_flashcards(request.document_id,current_user.id,request.count,db)
+    return flashcards.generate_and_save_flashcards(request.document_ids,current_user.id,request.count,db)
 
 @router.get('/flashcards',status_code=status.HTTP_200_OK,response_model=List[schemas.FlashCardResponse])
 def get_flashcards(document_id:int,current_user:schemas.UserResponse=Depends(oauth2.get_current_user),db:Session=Depends(database.get_db)):

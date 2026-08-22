@@ -92,11 +92,26 @@ class FlashCardResponse(BaseModel):
     question:str
     answer:str
     created_at:datetime
+    document_ids:list[int]
     model_config = ConfigDict(from_attributes=True)
+
+    @model_validator(mode='before')
+    @classmethod
+    def extract_document_ids(cls, obj):
+        if hasattr(obj, 'documents'):
+            return {
+                "id": obj.id,
+                "type":obj.type,
+                "question":obj.question,
+                "answer":obj.answer,
+                "created_at":obj.created_at,
+                "document_ids": [d.id for d in obj.documents],
+            }
+        return obj
 
 class FlashCardGenerateRequest(BaseModel):
     count: int = 10 #how many flash cards
-    document_id:int
+    document_ids:list[int]
 
 class FlashCardAnswerRequest(BaseModel):
     user_answer:str

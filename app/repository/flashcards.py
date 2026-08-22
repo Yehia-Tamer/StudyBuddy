@@ -4,21 +4,21 @@ from app import models
 from app.rag.chains import flashcard_chain
 
 
-def generate_and_save_flashcards(document_id:int,user_id:int,count:int,db:Session):
-    document=db.query(models.Document).filter(models.Document.id == document_id).first()
+def generate_and_save_flashcards(document_ids:list[int],user_id:int,count:int,db:Session):
+    documents=db.query(models.Document).filter(models.Document.id.in_(document_ids)).all()
+    if len(documents)!=len(document_ids):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="One or more documents not found")
+    
+    for document in documents:
+        if document.user_id!=user_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="User not authorized")
 
-    if not document:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
-
-    if document.user_id!=user_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User not authorized")
-
-    generated=flashcard_chain.generate_flashcards(user_id,document_id,count)
+    generated=flashcard_chain.generate_flashcards(user_id,document_ids,count)
 
     saved_flashcards=[]
 
     for item in generated:
-        card=models.FlashCard(document_id=document_id,user_id=user_id,type=item["type"],question=item["question"],answer=item["answer"])
+        card=models.FlashCard(user_id=user_id,type=item["type"],question=item["question"],answer=item["answer"],documents=documents)
         db.add(card)
         saved_flashcards.append(card)
 

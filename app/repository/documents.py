@@ -8,7 +8,7 @@ from starlette import status
 
 from app import models
 from app.rag import vectorstore
-from app.rag.loaders import pdf_loader
+from app.rag.loaders.pdf_loader import load_and_split_pdf,PDFLoadError
 from app.rag.loaders.youtube_loader import get_video_id, load_youtube_document, YoutubeTranscriptError
 from app.rag.loaders.web_loader import load_web_document, WebArticleError
 from app.rag.loaders.audio_loader import AudioTranscriptError, load_audio_document
@@ -28,24 +28,24 @@ def save_uploaded_file(file: UploadFile, user_id: int) -> str:
 
     return file_path
 
-def create_pptx_document(file: UploadFile, user_id: int, db: Session) -> models.Document:
-    if not file.filename.lower().endswith((".pptx", ".ppt")):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Not a PowerPoint file")
+def create_pdf_document(file: UploadFile, user_id: int, db: Session) -> models.Document:
+    if not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Not a PDF file")
 
     file_path = save_uploaded_file(file, user_id)
 
     try:
-        chunks = load_and_split_pptx(file_path)
-    except PPTXLoadError as e:
+        chunks = load_and_split_pdf(file_path)
+    except PDFLoadError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to process PowerPoint file: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to process PDF file: {e}")
 
     new_document = models.Document(
         user_id=user_id,
         filename=file.filename,
-        source_type="pptx",
-        page_count=len(set(chunk.metadata.get("slide", 0) for chunk in chunks))
+        source_type="pdf",
+        page_count=len(chunks)
     )
 
     db.add(new_document)
