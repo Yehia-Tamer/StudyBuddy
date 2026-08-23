@@ -26,5 +26,5 @@ def delete_study_plan(study_plan_id:int,current_user:schemas.UserResponse=Depend
     return study_plans.delete_study_plan(study_plan_id,current_user.id,db)
 
 @router.put('/{study_plan_id}/items/{item_id}',status_code=status.HTTP_200_OK,response_model=schemas.StudyPlanItemResponse)
-def complete_item(request:schemas.StudyPlanItemUpdate,study_plan_id:int,study_plan_item_id:int,current_user:schemas.UserResponse=Depends(oauth2.get_current_user),db:Session=Depends(database.get_db)):
-    return study_plans.update_item_completion(study_plan_id,study_plan_item_id,current_user.id,request.completed,db)
+def complete_item(request:schemas.StudyPlanItemUpdate,study_plan_id:int,item_id:int,current_user:schemas.UserResponse=Depends(oauth2.get_current_user),db:Session=Depends(database.get_db)):
+    return study_plans.update_item_completion(study_plan_id,item_id,current_user.id,request.completed,db)

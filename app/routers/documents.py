@@ -34,7 +34,7 @@ def upload_audio_document(file:UploadFile=File(...),current_user:schemas.UserRes
     return documents.create_audio_document(file,current_user.id,db)
 
 @router.post('/pptx',status_code=status.HTTP_201_CREATED,response_model=schemas.DocumentResponse)
-def upload_pptx_document(file:UploadFile=File(...),current_user:schemas.UserResponse=Depends(oauth2.get_current_user),db:Sessiom=Depends(database.get_db)):
+def upload_pptx_document(file:UploadFile=File(...),current_user:schemas.UserResponse=Depends(oauth2.get_current_user),db:Session=Depends(database.get_db)):
     return documents.create_pptx_document(file,current_user.id,db)
 
 @router.delete('/{document_id}', status_code=status.HTTP_204_NO_CONTENT)

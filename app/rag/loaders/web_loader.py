@@ -18,7 +18,6 @@ def fetch_html(url: str) -> str:
         response.raise_for_status()
         return response.text
     except requests.exceptions.ConnectionError:
-        print(f"DEBUG - actual connection error: {e}")
         raise WebArticleError(
             "Could not connect to this site — it may be blocking automated requests."
         )
