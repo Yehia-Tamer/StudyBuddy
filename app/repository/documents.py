@@ -55,6 +55,7 @@ def create_pdf_document(file: UploadFile, user_id: int, db: Session) -> models.D
     try:
         add_documents(chunks, user_id=user_id, document_id=new_document.id)
     except Exception as e:
+        get_vectorstore().delete(where={"$and": [{"user_id": user_id}, {"document_id": new_document.id}]})
         db.delete(new_document)
         db.commit()
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to embed document: {str(e)}")
@@ -90,6 +91,7 @@ def create_youtube_document(url: str, user_id: int, db: Session) -> models.Docum
     try:
         add_documents(chunks, user_id=user_id, document_id=new_document.id)
     except Exception as e:
+        get_vectorstore().delete(where={"$and": [{"user_id": user_id}, {"document_id": new_document.id}]})
         db.delete(new_document)
         db.commit()
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to embed document: {str(e)}")
@@ -124,6 +126,7 @@ def create_web_document(url: str, user_id: int, db: Session) -> models.Document:
     try:
         add_documents(chunks, user_id=user_id, document_id=document.id)
     except Exception as e:
+        get_vectorstore().delete(where={"$and": [{"user_id": user_id}, {"document_id": document.id}]})
         db.delete(document)
         db.commit()
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to embed document: {e}")
@@ -162,6 +165,7 @@ def create_audio_document(file: UploadFile, user_id: int, db: Session) -> models
         try:
             add_documents(chunks, user_id=user_id, document_id=document.id)
         except Exception as e:
+            get_vectorstore().delete(where={"$and": [{"user_id": user_id}, {"document_id": document.id}]})
             db.delete(document)
             db.commit()
 
@@ -199,6 +203,7 @@ def create_pptx_document(file:UploadFile,user_id:int,db:Session):
     try:
         add_documents(chunks,user_id=user_id,document_id=new_document.id)
     except Exception as e:
+        get_vectorstore().delete(where={"$and": [{"user_id": user_id}, {"document_id": new_document.id}]})
         db.delete(new_document)
         db.commit()
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=f"Failed to embed document: {e}")

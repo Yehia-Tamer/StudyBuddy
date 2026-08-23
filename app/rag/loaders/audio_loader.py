@@ -54,7 +54,7 @@ def chunk_audio_with_timestamps(segments,filename:str,chunk_size:int=800,chunk_o
                 )
             )
 
-            buffer_segments=buffer_segments[-overlap_segments]
+            buffer_segments=buffer_segments[-overlap_segments:]
             buffer_len=sum(len(s.text.strip())+1 for s in buffer_segments)
 
     if buffer_segments:

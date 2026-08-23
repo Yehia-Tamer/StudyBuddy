@@ -13,7 +13,7 @@ class QuizQuestionLLM(BaseModel):
     answer: str = Field(description="The answer to the question")
 
 class QuizLLM(BaseModel):
-    topic:str = Field("The topic of the quiz")
+    topic:str = Field(description="The topic of the quiz")
     questions: list[QuizQuestionLLM] = Field(description="The questions testing the understanding of the material")
     time_estimate_minutes:int = Field(description="An estimate of how long the entire quiz should last")
 
