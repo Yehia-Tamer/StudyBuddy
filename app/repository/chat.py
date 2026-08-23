@@ -27,6 +27,10 @@ def get_conversation(conversation_id: int, user_id: int, db: Session):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User not authorized")
     return conversation
 
+def delete_conversation(conversation_id:int,user_id:int,db:Session):
+    conversation=get_conversation(conversation_id,user_id,db)
+    db.delete(conversation)
+    db.commit()
 
 def save_message(conversation_id: int, user_id: int, role: str, content: str, db: Session, sources: list | None = None):
     get_conversation(conversation_id, user_id, db)

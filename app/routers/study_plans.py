@@ -17,11 +17,11 @@ def create_study_plan(request:schemas.StudyPlanGenerateRequest,current_user:sche
 def get_study_plans(current_user:schemas.UserResponse=Depends(oauth2.get_current_user),db:Session=Depends(database.get_db)):
     return study_plans.get_study_plans(current_user.id,db)
 
-@router.get('/{study_plan_id}/',status_code=status.HTTP_200_OK,response_model=schemas.StudyPlanResponse)
+@router.get('/{study_plan_id}',status_code=status.HTTP_200_OK,response_model=schemas.StudyPlanResponse)
 def get_study_plan(study_plan_id:int,current_user:schemas.UserResponse=Depends(oauth2.get_current_user),db:Session=Depends(database.get_db)):
     return study_plans.get_study_plan(study_plan_id,current_user.id,db)
 
-@router.delete('/{study_plan_id}/',status_code=status.HTTP_204_NO_CONTENT)
+@router.delete('/{study_plan_id}',status_code=status.HTTP_204_NO_CONTENT)
 def delete_study_plan(study_plan_id:int,current_user:schemas.UserResponse=Depends(oauth2.get_current_user),db:Session=Depends(database.get_db)):
     return study_plans.delete_study_plan(study_plan_id,current_user.id,db)
 

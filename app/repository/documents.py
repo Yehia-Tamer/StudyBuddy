@@ -209,13 +209,17 @@ def create_pptx_document(file:UploadFile,user_id:int,db:Session):
 def get_user_documents(user_id: int, db: Session):
     return db.query(models.Document).filter(models.Document.user_id == user_id).all()
 
-def delete_document(document_id: int, user_id: int, db: Session):
+def get_document(document_id:int,user_id:int,db:Session):
     document = db.query(models.Document).filter(models.Document.id == document_id).first()
     if not document:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
     if document.user_id != user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User not authorized")
 
+    return document
+
+def delete_document(document_id: int, user_id: int, db: Session):
+    document=get_document(document_id,user_id,db)
     vectorstore = get_vectorstore()
     vectorstore.delete(where={"$and": [{"user_id": user_id}, {"document_id": document_id}]})
 

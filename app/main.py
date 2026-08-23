@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from app.routers import auth, documents, chat, study_plans,quizzes,cheat_sheets
+from app.routers import auth, documents, chat, study_plans,quizzes,cheat_sheets,flashcards
 from app import models,database
 
 
@@ -16,3 +16,4 @@ api.include_router(chat.router)
 api.include_router(study_plans.router)
 api.include_router(quizzes.router)
 api.include_router(cheat_sheets.router)
+api.include_router(flashcards.router)

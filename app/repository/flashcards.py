@@ -29,16 +29,8 @@ def generate_and_save_flashcards(document_ids:list[int],user_id:int,count:int,db
 
     return saved_flashcards
 
-def get_flashcards(user_id:int,document_id:int,db:Session):
-    document=db.query(models.Document).filter(models.Document.id == document_id).first()
-
-    if not document:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
-
-    if document.user_id!=user_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User not authorized")
-
-    return db.query(models.FlashCard).filter(models.FlashCard.document_id == document_id).all()
+def get_flashcards(user_id:int,db:Session):
+    return db.query(models.FlashCard).filter(models.FlashCard.user_id==user_id).all()
 
 def answer_flashcard(flashcard_id,user_id,user_answer:str,db:Session):
     flashcard=db.query(models.FlashCard).filter(models.FlashCard.id == flashcard_id).first()
@@ -56,3 +48,20 @@ def answer_flashcard(flashcard_id,user_id,user_answer:str,db:Session):
         "correct_answer": flashcard.answer,
         "feedback": result["feedback"]
     }
+
+def get_flashcard(flashcard_id:int,user_id:int,db:Session):
+    flashcard=db.query(models.FlashCard).filter(models.FlashCard.id==flashcard_id).first()
+
+    if not flashcard:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Flashcard not found")
+
+    if flashcard.user_id!=user_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="User not authorized")
+
+    return flashcard
+
+def delete_flash_card(flashcard_id:int,user_id:int,db:Session):
+    flashcard=get_flashcard(flashcard_id,user_id,db)
+    db.delete(flashcard)
+    db.commit()
+    
