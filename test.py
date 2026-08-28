@@ -1,7 +1,3 @@
-from app.rag.loaders.web_loader import load_web_document
+from app.rag.config import format_history
 
-
-c=load_web_document("https://www.google.com")
-
-for chunk in c:
-    print('\n\n'.join(chunk.page_content))
+print(format_history(None))

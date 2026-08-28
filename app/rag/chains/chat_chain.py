@@ -3,7 +3,7 @@ from google.api_core.exceptions import ResourceExhausted
 from langchain_core.messages import SystemMessage, HumanMessage, ToolMessage
 from langchain_core.prompts import PromptTemplate
 from app.rag.config import format_docs, format_history, get_llm
-from app.rag.key_rotation import API_KEYS, get_next_key
+from app.rag.key_rotation import API_KEYS, get_next_key,get_next_query_adj_key,QUERY_ADJ_KEYS
 from app.rag.retrievers import build_hybrid_retriever, build_reranking_retriever
 from app.rag.vectorstore import get_vectorstore
 from app.rag.tools import get_web_search_tool
@@ -102,18 +102,18 @@ RETRIEVER_PROMPT=PromptTemplate(
     input_variables=['question','history']
 )
 
-def rewrite_user_query(question:str,history:str):
+def rewrite_user_query(question:str,raw_history,history_text:str):
 
-    if not history or history=='No previous conversation.':
+    if not raw_history:
         return question
 
     last_error=None
-    for _ in range(len(API_KEYS)):
-        key = get_next_key()
+    for _ in range(len(QUERY_ADJ_KEYS)):
+        key = get_next_query_adj_key()
         llm = get_llm(key)
         try:
             chain=RETRIEVER_PROMPT|llm
-            response=chain.invoke({'question':question,'history':history})
+            response=chain.invoke({'question':question,'history':history_text})
             return extract_text(response)
         except ResourceExhausted as e:
             last_error=e
@@ -165,12 +165,12 @@ def extract_text(response) -> str:
 def ask_with_tools(question:str,user_id:int,document_id:int,history=None):
     vectorstore = get_vectorstore()
     history_text=format_history(history,max_tokens=2000)
-    imporved_query=rewrite_user_query(question,history_text)
+    improved_query=rewrite_user_query(question,history,history_text)
 
     hybrid_retriever=build_hybrid_retriever(vectorstore,user_id,document_id,get_llm,k=8)
     final_retriever=build_reranking_retriever(hybrid_retriever,top_n=5)
 
-    docs=final_retriever.invoke(imporved_query)
+    docs=final_retriever.invoke(improved_query)
     context=format_docs(docs)
     sources=build_sources(docs)
 
