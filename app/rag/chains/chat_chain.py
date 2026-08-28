@@ -86,8 +86,40 @@ def build_sources(docs:list[Document])->list[dict]:
 
     return sources
 
+RETRIEVER_PROMPT=PromptTemplate(
+    template="""You are a helpful study assistant. Use the question provided by the user and the conversation's history to rewrite the user's question
+    into a full standalone version if it depends on prior messages in the conversation for improved retrieval quality. Otherwise just return the original unchanged user query.
+    Do not answer the question or provide any explanation in the new question, just provide proper context for the retriever.
+    Also don't use quotation marks, prefixes nor labels when returning the ouput whether there are changed or not, as this question will be fed directly to the retriever.
+    Just provide the question directly don't add any additional notes or comments.
+    
+    User's Question:{question}
 
+    Chat History:{history}
 
+    Improved Question:
+    """,
+    input_variables=['question','history']
+)
+
+def rewrite_user_query(question:str,history:str):
+
+    if not history or history=='No previous conversation.':
+        return question
+
+    last_error=None
+    for _ in range(len(API_KEYS)):
+        key = get_next_key()
+        llm = get_llm(key)
+        try:
+            chain=RETRIEVER_PROMPT|llm
+            response=chain.invoke({'question':question,'history':history})
+            return extract_text(response)
+        except ResourceExhausted as e:
+            last_error=e
+            continue
+    
+    raise last_error
 
 PROMPT = PromptTemplate(
     template="""You are a helpful study assistant. Use the context below from the user's document to answer their question. Use the conversation history to understand follow-up questions.
@@ -132,20 +164,21 @@ def extract_text(response) -> str:
 
 def ask_with_tools(question:str,user_id:int,document_id:int,history=None):
     vectorstore = get_vectorstore()
+    history_text=format_history(history,max_tokens=2000)
+    imporved_query=rewrite_user_query(question,history_text)
 
     hybrid_retriever=build_hybrid_retriever(vectorstore,user_id,document_id,get_llm,k=8)
     final_retriever=build_reranking_retriever(hybrid_retriever,top_n=5)
 
-    docs=final_retriever.invoke(question)
+    docs=final_retriever.invoke(imporved_query)
     context=format_docs(docs)
     sources=build_sources(docs)
-    history_text=format_history(history,max_tokens=2000)
 
     web_search=get_web_search_tool()
 
     system_prompt = f"""You are a helpful study assistant. Use the document context below to answer questions about the material.
 
-    If the student asks where they can learn more, find external resources, videos, or further reading — you MUST use the web_search tool to find real, current resources. NEVER invent, guess, or fabricate a URL, video link, or resource from memory. Only recommend links that appear in the web_search tool's actual results. If the tool returns no relevant results, say so honestly rather than making something up. Also the videos must be professional and must be not so childish, for instance recommend videos similar to Organic Chemistry Tutor, etc... . However this does not mean all videos should be from Organic Chemistry Tutor I am only giving an example.
+    If the student asks where they can learn more, find external resources, videos, or further reading — you MUST use the web_search tool to find real, current resources. NEVER invent, guess, or fabricate a URL, video link, or resource from memory. Only recommend links that appear in the web_search tool's actual results. If the tool returns no relevant results, say so honestly rather than making something up. Also the videos must be professional and must be not so childish, for instance recommend videos similar to Organic Chemistry Tutor, etc... . However this does not mean all videos should be from Organic Chemistry Tutor I am only giving an example, and do not site him unless the video or source is from Organic Chemistry Tutor I am just providing you with an example.
 
     Document context:
     {context}
