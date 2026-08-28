@@ -24,3 +24,7 @@ def get_flashcard(flashcard_id:int,current_user:schemas.UserResponse=Depends(oau
 @router.post('/{flashcard_id}/answer',status_code=status.HTTP_200_OK,response_model=schemas.FlashCardAnswerResponse)
 def answer_flashcard(request:schemas.FlashCardAnswerRequest,flashcard_id:int,current_user:schemas.UserResponse=Depends(oauth2.get_current_user),db:Session=Depends(database.get_db)):
     return flashcards.answer_flashcard(flashcard_id,current_user.id,request.user_answer,db)
+
+@router.delete('/{flashcard_id}',status_code=status.HTTP_204_NO_CONTENT)
+def delete_flashcard(flashcard_id:int,current_user:schemas.UserResponse=Depends(oauth2.get_current_user),db:Session=Depends(database.get_db)):
+    return flashcards.delete_flash_card(flashcard_id,current_user.id,db)

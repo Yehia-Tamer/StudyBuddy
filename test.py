@@ -1,7 +1,7 @@
-from app.rag.loaders.pptx_loader import load_and_split_pptx
+from app.rag.loaders.web_loader import load_web_document
 
 
-chunks=load_and_split_pptx(r"C:\Users\yehia Nour\Desktop\StudyBuddy\test.pptx")
+c=load_web_document("https://www.google.com")
 
-for chunk in chunks:
-    print(f"\nMetadata: {chunk.metadata}\n")
+for chunk in c:
+    print('\n\n'.join(chunk.page_content))
