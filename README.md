@@ -13,14 +13,14 @@ An AI-powered study assistant backend built with FastAPI, PostgreSQL, and Google
   - **Audio** — local transcription via faster-whisper, chunked with per-segment timestamps
   - **YouTube** — transcript fetched (manual preferred over auto-generated), chunked with per-segment timestamps
   - **Web articles** — `trafilatura`-based extraction with graceful handling of bot-protected/unreachable sites
-- **Conversational RAG chat** — multi-turn chat grounded in your uploaded documents, with persisted conversation history, token-budgeted context (not just a fixed message count), hybrid retrieval (vector + BM25) with multi-query expansion and cross-encoder reranking, and per-source-type citations (PDF page, PPTX slide, YouTube/audio timestamp, web article title/link)
+- **Conversational RAG chat** — multi-turn chat grounded in your uploaded documents, with persisted conversation history, token-budgeted context (not just a fixed message count), follow-up questions rewritten into standalone queries before retrieval for improved recall, hybrid retrieval (vector + BM25) with multi-query expansion and cross-encoder reranking, and per-source-type citations (PDF page, PPTX slide, YouTube/audio timestamp, web article title/link)
 - **Web search tool-calling** — when a question warrants it (e.g. "where can I learn more about this"), the assistant can call a web search tool (Tavily) to recommend real websites/videos, with prompting in place to prevent it from fabricating links
 - **Flashcards** — auto-generated from one or more documents, mix of Q&A and True/False types, persisted with a many-to-many document association, with LLM-graded free-text answer checking (accepts semantically equivalent answers, not just exact matches)
 - **Study plans** — generated from one or more documents, broken into prioritized topics with time estimates and subtopics, with per-item completion tracking
 - **Quizzes** — generated from one or more documents at a chosen difficulty, persisted, graded on submission, with a `solved` flag to track completion
 - **Cheat sheets** — one-page, exam-focused summaries generated from one or more documents (concepts, definitions, formulas, procedures)
 - **Local embeddings** — `sentence-transformers/all-MiniLM-L6-v2` (via `HuggingFaceEmbeddings`) is the primary embedding path, run entirely locally to avoid API cost/latency/rate limits on every document upload. Gemini embeddings (`gemini-embedding-001`) are kept in `embeddings.py` as a secondary/fallback option.
-- **Multi-key API rotation** — automatic fallback across multiple Gemini API keys (separate pools for generation and multi-query retrieval) on rate-limit errors, so one exhausted key doesn't take down the app
+- **Multi-key API rotation** — automatic fallback across multiple Gemini API keys (separate pools for generation, multi-query retrieval, and query rewriting) on rate-limit errors, so one exhausted key — or one exhausted pool — doesn't take down the app
 - **Database migrations** — schema changes managed via Alembic rather than ad hoc table drops
 
 ## Tech Stack
@@ -72,7 +72,7 @@ app/
 │   ├── embeddings.py             # local (primary) + Gemini (fallback) embedding config
 │   ├── vectorstore.py             # single source of truth for Chroma access
 │   ├── retrievers.py               # hybrid (vector + BM25) retrieval, multi-query, reranking
-│   ├── key_rotation.py              # Gemini API key rotation (generation / multi-query / embedding pools)
+│   ├── key_rotation.py              # Gemini API key rotation (generation / multi-query / query-rewrite / embedding pools)
 │   ├── tools.py                      # Tavily web search tool
 │   ├── config.py                      # shared LLM factory, token counting, doc/history formatting
 │   │
@@ -116,6 +116,9 @@ alembic/                    # Migration history
    MULTI_RETRIEVER_KEY_1=<gemini api key>
    MULTI_RETRIEVER_KEY_2=<gemini api key>
    MULTI_RETRIEVER_KEY_3=<gemini api key>
+   QUERY_ADJ_KEY_1=<gemini api key>
+   QUERY_ADJ_KEY_2=<gemini api key>
+   QUERY_ADJ_KEY_3=<gemini api key>
    TAVILY_API_KEY=<tavily api key>
    ```
    `EMBEDDING_KEY_1/2/3` are optional — only needed if you switch `embeddings.py` over to the Gemini fallback path.
