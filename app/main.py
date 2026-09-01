@@ -1,10 +1,18 @@
 from fastapi import FastAPI
-
+from fastapi.middleware.cors import CORSMiddleware
 from app.routers import auth, documents, chat, study_plans,quizzes,cheat_sheets,flashcards
 from app import models,database
 
-
 api=FastAPI()
+
+api.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 models.Base.metadata.create_all(bind=database.engine)
 @api.get("/", status_code=200)
 def root():
