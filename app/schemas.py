@@ -39,6 +39,7 @@ class DocumentResponse(BaseModel):
     filename: str
     upload_date:datetime
     page_count: int | None
+    source_type:str
     model_config = ConfigDict(from_attributes=True)
 
 class YouTubeDocumentRequest(BaseModel):

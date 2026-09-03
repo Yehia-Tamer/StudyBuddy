@@ -18,6 +18,7 @@
   flex-direction: column;
   justify-content: center;
   position: relative;
+  overflow: hidden;
 }
 
 @media (max-width: 900px) {
@@ -32,6 +33,9 @@
   font-weight: 600;
   margin-bottom: 64px;
   color: var(--highlighter);
+  opacity: 0;
+  animation: rise var(--dur-base) var(--ease-out) forwards;
+  animation-delay: 40ms;
 }
 
 @media (max-width: 900px) {
@@ -47,6 +51,14 @@
   max-width: 460px;
   color: #fff;
   letter-spacing: -0.3px;
+  opacity: 0;
+  animation: rise var(--dur-base) var(--ease-out) forwards;
+  animation-delay: 120ms;
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .features {
@@ -64,12 +76,18 @@
   gap: 16px;
   padding-bottom: 20px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  opacity: 0;
+  animation: rise var(--dur-base) var(--ease-out) forwards;
 }
 
 .features li:last-child {
   border-bottom: none;
   padding-bottom: 0;
 }
+
+.features li:nth-child(1) { animation-delay: 220ms; }
+.features li:nth-child(2) { animation-delay: 300ms; }
+.features li:nth-child(3) { animation-delay: 380ms; }
 
 .featureLabel {
   font-family: var(--font-display);
@@ -94,6 +112,9 @@
 .formCard {
   width: 100%;
   max-width: 380px;
+  opacity: 0;
+  animation: rise var(--dur-base) var(--ease-out) forwards;
+  animation-delay: 160ms;
 }
 
 .eyebrow {
