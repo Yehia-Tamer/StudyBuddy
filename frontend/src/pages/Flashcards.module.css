@@ -307,3 +307,28 @@
   letter-spacing: 0.03em;
   margin-bottom: 12px;
 }
+
+.cardTopRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.deleteButton {
+  background: none;
+  border: none;
+  color: var(--danger);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 0;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+
+.deleteButton:hover:not(:disabled) {
+  opacity: 0.7;
+}
+
+.deleteButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

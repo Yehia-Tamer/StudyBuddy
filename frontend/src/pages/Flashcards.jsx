@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import AppShell from '../components/layout/AppShell';
-import { getFlashcards, generateFlashcards, answerFlashcard } from '../api/flashcards';
-import { getDocuments } from '../api/documents';
+import { getFlashcards, generateFlashcards, answerFlashcard, deleteFlashCard } from '../api/flashcards';import { getDocuments } from '../api/documents';
 import styles from './Flashcards.module.css';
 
 export default function Flashcards() {
@@ -12,6 +11,7 @@ export default function Flashcards() {
   const [selectedDocIds, setSelectedDocIds] = useState([]);
   const [count, setCount] = useState(10);
   const [generating, setGenerating] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   const [sessionCards, setSessionCards] = useState(null); // null = nothing generated yet this visit
 
   const [libraryCards, setLibraryCards] = useState(null); // null = not fetched yet
@@ -106,6 +106,22 @@ export default function Flashcards() {
     }
   }
 
+  async function handleDeleteCard(cardId) {
+  if (!window.confirm('Delete this flashcard? This cannot be undone.')) return;
+
+  setDeletingId(cardId);
+  setError('');
+  try {
+    await deleteFlashCard(cardId);
+    setSessionCards((prev) => (prev ? prev.filter((c) => c.id !== cardId) : prev));
+    setLibraryCards((prev) => (prev ? prev.filter((c) => c.id !== cardId) : prev));
+  } catch {
+    setError('Could not delete that flashcard. Try again.');
+  } finally {
+    setDeletingId(null);
+  }
+}
+
   function renderCard(card, index) {
     const answerState = answers[card.id] || {};
     return (
@@ -115,6 +131,17 @@ export default function Flashcards() {
         style={{ animationDelay: `${index * 60}ms` }}
       >
         <span className={styles.badge}>{card.type}</span>
+        <div className={styles.cardTopRow}>
+          <span className={styles.badge}>{card.type}</span>
+          <button
+            type="button"
+            className={styles.deleteButton}
+            onClick={() => handleDeleteCard(card.id)}
+            disabled={deletingId === card.id}
+          >
+          {deletingId === card.id ? 'Deleting…' : 'Delete'}
+          </button>
+        </div>
         <p className={styles.question}>{card.question}</p>
 
         <input

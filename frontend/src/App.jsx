@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Documents from './pages/Documents';
 import Flashcards from './pages/Flashcards';
+import Chat from './pages/Chat';
 
 function App() {
   return (
@@ -25,9 +26,18 @@ function App() {
         <Route
           path="/flashcards"
           element={
-          <ProtectedRoute>
-            <Flashcards />
-          </ProtectedRoute>
+            <ProtectedRoute>
+              <Flashcards />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/chat"
+          element={
+            <ProtectedRoute>
+              <Chat />
+            </ProtectedRoute>
           }
         />
 

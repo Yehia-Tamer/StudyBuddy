@@ -19,3 +19,7 @@ export async function answerFlashcard(flashcardId, userAnswer) {
   });
   return data;
 }
+
+export async function deleteFlashCard(flashcardId) {
+  await api.delete(`/flashcards/${flashcardId}`);
+}
