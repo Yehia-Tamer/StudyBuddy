@@ -5,7 +5,7 @@ from langchain_core.prompts import PromptTemplate
 from app.rag.config import get_llm
 from app.rag.key_rotation import API_KEYS, get_next_key
 from app.rag.vectorstore import get_vectorstore
-from pydantic import BaseModel,Field
+from pydantic import BaseModel
 
 class CheatSheetLLM(BaseModel):
     title:str

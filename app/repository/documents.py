@@ -9,11 +9,12 @@ from starlette import status
 from app import models
 from app.rag import vectorstore
 from app.rag.loaders.pdf_loader import load_and_split_pdf,PDFLoadError
-from app.rag.loaders.youtube_loader import get_video_id, load_youtube_document, YoutubeTranscriptError
+from app.rag.loaders.youtube_loader import get_video_id, fetch_transcript,load_youtube_document, YoutubeTranscriptError
 from app.rag.loaders.web_loader import load_web_document, WebArticleError
 from app.rag.loaders.audio_loader import AudioTranscriptError, load_audio_document
 from app.rag.loaders.pptx_loader import load_and_split_pptx,PPTXLoadError
 from app.rag.vectorstore import get_vectorstore, add_documents
+from app.rag.chains.youtube_title_chain import generate_youtube_title
 
 UPLOAD_DIR = "uploads"
 
@@ -63,6 +64,9 @@ def create_pdf_document(file: UploadFile, user_id: int, db: Session) -> models.D
     return new_document
 
 def create_youtube_document(url: str, user_id: int, db: Session) -> models.Document:
+    transcript_data=fetch_transcript(url)
+    transcript=" ".join(snippet.text for snippet in transcript_data)
+    response=generate_youtube_title(transcript)
     video_id = get_video_id(url)
     if not video_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Not a valid YouTube URL")
@@ -78,7 +82,7 @@ def create_youtube_document(url: str, user_id: int, db: Session) -> models.Docum
 
     new_document = models.Document(
         user_id=user_id,
-        filename=f"YouTube: {video_id}",
+        filename=response['title'],
         page_count=None,
         source_type="youtube",
         source_url=url
