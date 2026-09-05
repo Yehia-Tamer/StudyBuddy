@@ -1,35 +1,64 @@
 # StudyBuddy
 
-An AI-powered study assistant backend built with FastAPI, PostgreSQL, and Google Gemini. Upload notes, lecture PDFs, slide decks, audio recordings, YouTube videos, or web articles and StudyBuddy lets you chat with them, generates flashcards/quizzes/cheat sheets, builds personalized study plans, and can search the web for extra learning resources.
+An AI-powered, full-stack study assistant. Upload notes, lecture PDFs, slide decks, audio recordings, YouTube videos, or web articles, then chat with them, generate flashcards/quizzes/cheat sheets, build a personalized study plan, and search the web for extra learning resources.
 
-> **Status:** Backend feature-complete for this phase. Frontend and deployment are not yet started — paused here to focus on an AI/agents coursework track before resuming.
+The backend is a FastAPI + PostgreSQL + ChromaDB RAG pipeline built on Google Gemini (via LangChain). The frontend is a React + Vite single-page app that covers every backend feature end to end.
+
+> **Status:** Backend is feature-complete for this phase. The frontend now covers every backend feature — auth, document upload, chat, flashcards, quizzes, study plans, and cheat sheets. Automated tests, CI/CD, containerization, and deployment are still outstanding (see [Roadmap](#roadmap)).
+
+## Contents
+
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [About the Frontend](#about-the-frontend)
+- [Setup](#setup)
+- [API Overview](#api-overview)
+- [Known Simplifications / Follow-ups](#known-simplifications--follow-ups)
+- [Roadmap](#roadmap)
 
 ## Features
 
-- **Auth** — JWT-based registration/login (bcrypt password hashing)
-- **Multi-source document ingestion** — PDF, PowerPoint (.pptx), audio lectures, YouTube videos, and web articles, all chunked and embedded into a shared vector store:
-  - **PDF** — includes an OCR fallback (Tesseract + Poppler) for scanned/image-based PDFs (e.g. CamScanner exports) when no extractable text layer is found
-  - **PowerPoint** — text + speaker notes extracted per slide (one `Document` per slide before splitting), preserving slide-level metadata for citations
-  - **Audio** — local transcription via faster-whisper, chunked with per-segment timestamps
-  - **YouTube** — transcript fetched (manual preferred over auto-generated), chunked with per-segment timestamps
-  - **Web articles** — `trafilatura`-based extraction with graceful handling of bot-protected/unreachable sites
-- **Conversational RAG chat** — multi-turn chat grounded in your uploaded documents, with persisted conversation history, token-budgeted context (not just a fixed message count), follow-up questions rewritten into standalone queries before retrieval for improved recall, hybrid retrieval (vector + BM25) with multi-query expansion and cross-encoder reranking, and per-source-type citations (PDF page, PPTX slide, YouTube/audio timestamp, web article title/link)
-- **Web search tool-calling** — when a question warrants it (e.g. "where can I learn more about this"), the assistant can call a web search tool (Tavily) to recommend real websites/videos, with prompting in place to prevent it from fabricating links
-- **Flashcards** — auto-generated from one or more documents, mix of Q&A and True/False types, persisted with a many-to-many document association, with LLM-graded free-text answer checking (accepts semantically equivalent answers, not just exact matches)
-- **Study plans** — generated from one or more documents, broken into prioritized topics with time estimates and subtopics, with per-item completion tracking
-- **Quizzes** — generated from one or more documents at a chosen difficulty, persisted, graded on submission, with a `solved` flag to track completion
-- **Cheat sheets** — one-page, exam-focused summaries generated from one or more documents (concepts, definitions, formulas, procedures)
-- **Local embeddings** — `sentence-transformers/all-MiniLM-L6-v2` (via `HuggingFaceEmbeddings`) is the primary embedding path, run entirely locally to avoid API cost/latency/rate limits on every document upload. Gemini embeddings (`gemini-embedding-001`) are kept in `embeddings.py` as a secondary/fallback option.
-- **Multi-key API rotation** — automatic fallback across multiple Gemini API keys (separate pools for generation, multi-query retrieval, and query rewriting) on rate-limit errors, so one exhausted key — or one exhausted pool — doesn't take down the app
-- **Database migrations** — schema changes managed via Alembic rather than ad hoc table drops
+### Backend
+
+- **Auth** — JWT-based registration/login. Passwords are SHA-256-hashed and base64-encoded before bcrypt (`app/hashing.py`), which sidesteps bcrypt's 72-byte input limit.
+- **Multi-source document ingestion** — PDF, PowerPoint (`.pptx`), audio lectures, YouTube videos, and web articles, all chunked and embedded into a shared vector store:
+  - **PDF** — OCR fallback (Tesseract + Poppler) for scanned/image-based PDFs when no extractable text layer is found.
+  - **PowerPoint** — text + speaker notes extracted per slide, preserving slide-level metadata for citations.
+  - **Audio** — local transcription via `faster-whisper`, chunked with per-segment timestamps.
+  - **YouTube** — transcript fetched (manual preferred over auto-generated), chunked with per-segment timestamps, and given an LLM-generated descriptive title (`youtube_title_chain.py`) instead of falling back to the raw video ID.
+  - **Web articles** — `trafilatura`-based extraction with graceful handling of bot-protected/unreachable sites.
+- **Conversational RAG chat** — multi-turn chat grounded in your uploaded documents, with persisted history, token-budgeted context, follow-up questions rewritten into standalone queries before retrieval, hybrid retrieval (vector + BM25) with multi-query expansion and cross-encoder reranking, and per-source-type citations (PDF page, PPTX slide, YouTube/audio timestamp, web article title/link).
+- **Web search tool-calling** — when a question warrants it (e.g. "where can I learn more"), the assistant calls a Tavily web search tool to recommend real resources, with prompting in place to prevent it from fabricating links.
+- **Flashcards** — auto-generated from one or more documents, mix of Q&A and True/False types, with LLM-graded free-text answer checking (accepts semantically equivalent answers, not just exact matches).
+- **Study plans** — generated from one or more documents, broken into prioritized topics with time estimates and subtopics, with per-item completion tracking.
+- **Quizzes** — generated at a chosen difficulty, persisted, graded on submission, with a `solved` flag.
+- **Cheat sheets** — one-page, exam-focused summaries (concepts, definitions, formulas, procedures).
+- **Local embeddings** — `sentence-transformers/all-MiniLM-L6-v2` as the primary embedding path (avoids API cost/latency/rate limits on every upload); Gemini embeddings kept as a fallback in `embeddings.py`.
+- **Multi-key API rotation** — automatic fallback across multiple Gemini API keys (separate pools for generation, multi-query retrieval, and query rewriting) on rate-limit errors.
+- **Database migrations** — schema changes managed via Alembic rather than ad hoc table drops.
+
+### Frontend
+
+- **Auth flow** — register/login backed by the JWT API; the token is stored in `localStorage` and attached to every request automatically via an axios request interceptor (`src/client.js`); protected routes redirect to `/login` when logged out.
+- **Document library** — upload PDF/PPTX/audio files or paste a YouTube/web URL, with per-type inputs and "still working…" hints on slow uploads (e.g. audio transcription).
+- **Chat** — per-document or general chat, typing indicator, cancellable in-flight requests (`AbortController`), auto-resizing input, auto-scroll, and clickable inline source citations (page/slide/timestamp/link) rendered as chips; the active conversation is persisted to `localStorage` so it survives a page refresh.
+- **Flashcards** — generate-from-documents flow with a count picker, per-card free-text answer checking against the LLM grader, and per-card delete.
+- **Quizzes** — difficulty + question-count picker, mixed Q&A/True-False rendering, submit-and-grade flow with per-question feedback and correct-answer reveal.
+- **Study plans** — priority-color-coded topic breakdown with per-item completion checkboxes and subtopic lists.
+- **Cheat sheets** — Markdown-rendered one-page summaries, including LaTeX math via KaTeX.
+- **Consistent "Generate" vs "Library" pattern** across Flashcards/Quizzes/Study Plans/Cheat Sheets/Chat, with library data fetched (and cached) only the first time a tab is opened.
+- **Small custom design system** (`src/styles/theme.css`) — CSS custom properties for color, type (Fraunces display serif + Inter UI sans), spacing/radius/shadow, and motion, with `prefers-reduced-motion` respected globally.
 
 ## Tech Stack
 
-- **Backend:** FastAPI, SQLAlchemy, Alembic
+### Backend
+
+- **Framework:** FastAPI, SQLAlchemy, Alembic
 - **Database:** PostgreSQL (relational data), ChromaDB (vector store)
 - **AI/LLM:** Google Gemini (via LangChain), LangChain for chains/prompts/parsers/retrievers
 - **Embeddings:** sentence-transformers (local, primary), Gemini embeddings (fallback)
-- **Auth:** JWT (python-jose), bcrypt
+- **Auth:** JWT (`python-jose`), bcrypt
 - **OCR:** pytesseract + pdf2image (Tesseract OCR + Poppler)
 - **Audio transcription:** faster-whisper
 - **YouTube transcripts:** youtube-transcript-api
@@ -38,11 +67,20 @@ An AI-powered study assistant backend built with FastAPI, PostgreSQL, and Google
 - **Reranking:** HuggingFace cross-encoder (`ms-marco-MiniLM-L-6-v2`) via `CrossEncoderReranker`
 - **Token counting:** tiktoken (approximate budget for conversation history)
 
+### Frontend
+
+- **Framework:** React 19 + Vite 8 (`@vitejs/plugin-react`)
+- **Routing:** react-router-dom v7
+- **HTTP:** axios (single shared instance + JWT interceptor)
+- **Markdown/Math:** react-markdown + remark-gfm + remark-math + rehype-katex + katex
+- **Styling:** CSS Modules per component/page + a shared design-token stylesheet (`theme.css`)
+- **Linting:** ESLint (flat config) with `eslint-plugin-react-hooks` and `eslint-plugin-react-refresh`
+
 ## Project Structure
 
 ```
 app/
-├── main.py                     # FastAPI app instance, router registration
+├── main.py                     # FastAPI app instance, router registration, CORS
 ├── database.py                  # engine, SessionLocal, Base, get_db()
 ├── models.py                     # SQLAlchemy models
 ├── schemas.py                     # Pydantic request/response schemas
@@ -88,12 +126,57 @@ app/
 │       ├── flashcard_chain.py
 │       ├── study_plan_chain.py
 │       ├── quiz_chain.py
-│       └── cheat_sheet_chain.py
+│       ├── cheat_sheet_chain.py
+│       └── youtube_title_chain.py
 │
 alembic/                    # Migration history
+
+frontend/
+├── index.html
+├── vite.config.js
+├── eslint.config.js
+├── public/                  # favicon, icon sprite
+└── src/
+    ├── main.jsx               # app entry, wraps App in BrowserRouter
+    ├── App.jsx                 # route table
+    ├── client.js                # shared axios instance + JWT interceptor
+    ├── styles/
+    │   ├── theme.css              # design tokens
+    │   └── forms.module.css
+    ├── context/
+    │   └── AuthContext.jsx         # login/register/logout/user state
+    ├── utils/
+    │   └── jwt.js                   # client-side JWT decode/expiry check (display only)
+    ├── components/
+    │   ├── AuthLayout.jsx             # shared Login/Register layout
+    │   ├── ProtectedRoute.jsx          # redirects unauthenticated users
+    │   ├── Markdown.jsx                 # shared GFM + KaTeX renderer
+    │   └── layout/
+    │       └── AppShell.jsx               # sidebar nav + logout
+    ├── api/                                # one thin axios wrapper per feature
+    │   ├── documents.js
+    │   ├── chat.js
+    │   ├── flashcards.js
+    │   ├── quizzes.js
+    │   ├── studyPlans.js
+    │   └── cheatSheets.js
+    └── pages/                                # one page per feature
+        ├── Login.jsx / Register.jsx
+        ├── Documents.jsx
+        ├── Chat.jsx
+        ├── Flashcards.jsx
+        ├── Quizzes.jsx
+        ├── StudyPlans.jsx
+        └── CheatSheets.jsx
 ```
 
+## About the Frontend
+
+The frontend was coded by hand by me, the project's author. Claude (Anthropic's AI assistant) was used throughout as a coding assistant — for planning components, working through bugs, and getting feedback on styling/design decisions — but the implementation itself was written by me.
+
 ## Setup
+
+### Backend
 
 1. **Clone the repo and create a virtual environment**
    ```bash
@@ -136,11 +219,23 @@ alembic/                    # Migration history
    ```
    Interactive docs available at `http://127.0.0.1:8000/docs`.
 
-### OCR dependencies (Windows)
+#### OCR dependencies (Windows)
 
 - **Tesseract:** install via the [UB-Mannheim build](https://github.com/UB-Mannheim/tesseract/wiki), note the install path (default `C:\Program Files\Tesseract-OCR\tesseract.exe`)
 - **Poppler:** download a [Windows release](https://github.com/oschwartz10612/poppler-windows/releases), extract, and note the `Library\bin` path
 - Update the paths in `app/rag/loaders/pdf_loader.py` if they differ from the defaults
+
+### Frontend
+
+1. ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
+2. The app is served at `http://localhost:5173` (see `vite.config.js`).
+3. Make sure the backend is running at `http://127.0.0.1:8000` — that's the hardcoded `baseURL` in `src/client.js`, and it's the only origin the backend's CORS config (`app/main.py`) currently allows.
+
+Other scripts: `npm run build`, `npm run preview`, `npm run lint`.
 
 ## API Overview
 
@@ -148,8 +243,8 @@ alembic/                    # Migration history
 |---|---|
 | Auth | `POST /auth/register`, `POST /auth/login` |
 | Documents | `GET /documents/`, `GET /documents/{id}`, `POST /documents/pdf`, `POST /documents/pptx`, `POST /documents/audio`, `POST /documents/youtube`, `POST /documents/web`, `DELETE /documents/{id}` |
-| Chat | `POST /conversations/`, `DELETE /conversations/{id}`, `POST /conversations/{id}/messages`, `GET /conversations/{id}/messages` |
-| Flashcards | `POST /flashcards/`, `GET /flashcards/`, `GET /flashcards/{id}`, `POST /flashcards/{id}/answer` |
+| Chat | `POST /conversations/`, `GET /conversations/`, `GET /conversations/{id}`, `DELETE /conversations/{id}`, `POST /conversations/{id}/messages`, `GET /conversations/{id}/messages` |
+| Flashcards | `POST /flashcards/`, `GET /flashcards/`, `GET /flashcards/{id}`, `POST /flashcards/{id}/answer`, `DELETE /flashcards/{id}` |
 | Study Plans | `POST /study-plans/`, `GET /study-plans/`, `GET /study-plans/{id}`, `DELETE /study-plans/{id}`, `PUT /study-plans/{id}/items/{item_id}` |
 | Quizzes | `POST /quizzes/`, `GET /quizzes/`, `GET /quizzes/{id}`, `POST /quizzes/{id}/grade`, `DELETE /quizzes/{id}` |
 | Cheat Sheets | `POST /cheat_sheets/`, `GET /cheat_sheets/`, `GET /cheat_sheets/{id}`, `DELETE /cheat_sheets/{id}` |
@@ -158,20 +253,25 @@ Full request/response schemas are available via the auto-generated Swagger docs 
 
 ## Known Simplifications / Follow-ups
 
-Documenting these honestly rather than hiding them — things to revisit when resuming:
+Documenting these honestly rather than hiding them — things to revisit later:
 
-- **Quiz grading assumes answer order matches question order** (positional list, not keyed by question ID) — works but is fragile if ordering assumptions ever break.
+- **Quiz grading assumes answer order matches question order** (positional list, not keyed by question ID) — the frontend submits answers in `activeQuiz.questions` order to match, but it's fragile if that assumption ever breaks.
 - **Chroma and Postgres are not automatically kept in sync** — deleting a document via the API cleans up both, but any manual DB surgery (e.g. dropping tables directly) will leave orphaned vectors in Chroma with no corresponding Postgres row. Always prefer the API's delete endpoints over manual SQL.
-- **YouTube-ingested documents use the video ID as the filename**, not the real video title — a placeholder, not blocking.
-- **No automated tests yet** — testing so far has been manual, via `/docs` and Postman.
-- **No CI/CD, containerization, or deployment yet** — planned for the "ship it" phase.
-- **`README.md` (this file) is a working draft** — will be expanded with screenshots/demo instructions once the frontend exists.
+- **Login returns `404` for both an unknown username and a wrong password** (`app/repository/auth.py`), rather than the more conventional `401` — a minor inconsistency worth revisiting.
+- **The frontend's API base URL is hardcoded** to `http://127.0.0.1:8000` in `src/client.js` rather than coming from an environment variable — fine for local dev, not yet configurable for other environments.
+- **No mobile navigation yet** — the sidebar is hidden below 900px (`AppShell.module.css`) with no mobile-friendly replacement; the app is desktop-first for now.
+- **No automated tests yet**, backend or frontend — testing so far has been manual (`/docs`, Postman, and clicking through the UI).
+- **No CI/CD, containerization, or deployment yet.**
 
 ## Roadmap
 
 - [ ] Multimodal document understanding (reasoning over images/diagrams/charts within PDFs and PPTX, not just OCR'd text)
-- [ ] Frontend (React or similar)
+- [ ] Mobile-responsive navigation for the frontend
 - [ ] Docker + docker-compose
 - [ ] Deploy to Railway/Render
-- [ ] Automated tests
+- [ ] Automated tests (backend and frontend)
 - [ ] Revisit quiz answer-ordering fragility
+- [ ] Handwritten notes via photo upload (OCR)
+- [ ] Audio summary / podcast-style recap
+- [ ] Spaced repetition scheduling for flashcards
+- [ ] Cross-document study plans informed by quiz performance
