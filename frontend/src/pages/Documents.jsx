@@ -1,4 +1,4 @@
-// frontend/src/pages/Documents.jsx
+
 import { useEffect, useState } from 'react';
 import {
   getDocuments,
@@ -16,8 +16,18 @@ const DOCUMENT_TYPES = [
   { value: 'pdf', label: 'PDF', kind: 'file', accept: '.pdf' },
   { value: 'pptx', label: 'PowerPoint', kind: 'file', accept: '.pptx,.ppt' },
   { value: 'audio', label: 'Audio', kind: 'file', accept: 'audio/*' },
-  { value: 'youtube', label: 'YouTube', kind: 'url', placeholder: 'Paste a YouTube link' },
-  { value: 'web', label: 'Web Article', kind: 'url', placeholder: 'Paste an article URL' },
+  {
+    value: 'youtube',
+    label: 'YouTube',
+    kind: 'url',
+    placeholder: 'Paste a YouTube link',
+  },
+  {
+    value: 'web',
+    label: 'Web Article',
+    kind: 'url',
+    placeholder: 'Paste an article URL',
+  },
 ];
 
 export default function Documents() {
@@ -33,45 +43,65 @@ export default function Documents() {
   const [fileInputKey, setFileInputKey] = useState(0);
   const [uploadElapsed, setUploadElapsed] = useState(0);
 
+  // Load documents when the page mounts
   useEffect(() => {
     let cancelled = false;
 
     async function loadDocuments() {
       setLoading(true);
       setError('');
+
       try {
         const data = await getDocuments();
-        if (!cancelled) setDocuments(data);
+
+        if (!cancelled) {
+          setDocuments(data);
+        }
       } catch {
-        if (!cancelled) setError('Could not load your documents.');
+        if (!cancelled) {
+          setError('Could not load your documents.');
+        }
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     }
 
-    useEffect(() => {
-      if (!uploading) {
-        setUploadElapsed(0);
-        return;
-      }
-      const interval = setInterval(() => {
-        setUploadElapsed((prev) => prev + 1);
-      }, 1000);
-      return () => clearInterval(interval);
-    }, [uploading]);
-
     loadDocuments();
+
     return () => {
       cancelled = true;
     };
   }, []);
 
+  // Track how long an upload has been running
+  useEffect(() => {
+    if (!uploading) {
+      setUploadElapsed(0);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setUploadElapsed((prev) => prev + 1);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [uploading]);
+
   async function handleDelete(documentId) {
-    if (!window.confirm('Delete this document? This cannot be undone.')) return;
+    if (!window.confirm('Delete this document? This cannot be undone.')) {
+      return;
+    }
+
     setDeletingId(documentId);
+
     try {
       await deleteDocument(documentId);
-      setDocuments((prev) => prev.filter((doc) => doc.id !== documentId));
+
+      setDocuments((prev) =>
+        prev.filter((doc) => doc.id !== documentId)
+      );
     } catch {
       setError('Could not delete that document. Try again.');
     } finally {
@@ -88,11 +118,19 @@ export default function Documents() {
   }
 
   async function handleUpload() {
-    const activeType = DOCUMENT_TYPES.find((t) => t.value === uploadType);
+    const activeType = DOCUMENT_TYPES.find(
+      (t) => t.value === uploadType
+    );
+
     if (!activeType) return;
 
-    if (activeType.kind === 'file' && !selectedFile) return;
-    if (activeType.kind === 'url' && !urlValue.trim()) return;
+    if (activeType.kind === 'file' && !selectedFile) {
+      return;
+    }
+
+    if (activeType.kind === 'url' && !urlValue.trim()) {
+      return;
+    }
 
     setUploading(true);
     setError('');
@@ -104,18 +142,23 @@ export default function Documents() {
         case 'pdf':
           newDocument = await uploadPdfDocument(selectedFile);
           break;
+
         case 'pptx':
           newDocument = await uploadPptxDocument(selectedFile);
           break;
+
         case 'audio':
           newDocument = await uploadAudioDocument(selectedFile);
           break;
+
         case 'youtube':
           newDocument = await uploadYoutubeDocument(urlValue.trim());
           break;
+
         case 'web':
           newDocument = await uploadWebDocument(urlValue.trim());
           break;
+
         default:
           return;
       }
@@ -131,7 +174,9 @@ export default function Documents() {
     }
   }
 
-  const activeType = DOCUMENT_TYPES.find((t) => t.value === uploadType);
+  const activeType = DOCUMENT_TYPES.find(
+    (t) => t.value === uploadType
+  );
 
   return (
     <AppShell>
@@ -142,16 +187,21 @@ export default function Documents() {
         </header>
 
         {error && (
-        <div className={styles.error}>
-          {error}{' '}
-              <button type="button" className={styles.retryLink} onClick={handleUpload}>
-                Try again
-              </button>
-        </div>
-      )}
+          <div className={styles.error}>
+            {error}{' '}
+            <button
+              type="button"
+              className={styles.retryLink}
+              onClick={handleUpload}
+            >
+              Try again
+            </button>
+          </div>
+        )}
 
         <div className={styles.generatePanel}>
           <p className={styles.generateLabel}>Upload a document</p>
+
           <div className={styles.docChips}>
             {DOCUMENT_TYPES.map((type) => (
               <button
@@ -175,7 +225,9 @@ export default function Documents() {
                 key={fileInputKey}
                 type="file"
                 accept={activeType.accept}
-                onChange={(e) => setSelectedFile(e.target.files[0] || null)}
+                onChange={(e) =>
+                  setSelectedFile(e.target.files[0] || null)
+                }
                 className={styles.fileInput}
               />
             ) : (
@@ -194,7 +246,9 @@ export default function Documents() {
               onClick={handleUpload}
               disabled={
                 uploading ||
-                (activeType.kind === 'file' ? !selectedFile : !urlValue.trim())
+                (activeType.kind === 'file'
+                  ? !selectedFile
+                  : !urlValue.trim())
               }
             >
               {uploading ? 'Uploading…' : 'Upload'}
@@ -213,7 +267,10 @@ export default function Documents() {
         {loading && (
           <div className={styles.grid}>
             {[0, 1, 2].map((i) => (
-              <div key={i} className={styles.skeletonCard} />
+              <div
+                key={i}
+                className={styles.skeletonCard}
+              />
             ))}
           </div>
         )}
@@ -221,8 +278,10 @@ export default function Documents() {
         {!loading && documents.length === 0 && !error && (
           <div className={styles.empty}>
             <p className={styles.emptyTitle}>No documents yet</p>
+
             <p className={styles.emptyDetail}>
-              Upload a PDF, slide deck, audio lecture, YouTube video, or web article to get started.
+              Upload a PDF, slide deck, audio lecture, YouTube video, or
+              web article to get started.
             </p>
           </div>
         )}
@@ -235,23 +294,37 @@ export default function Documents() {
                 className={styles.card}
                 style={{ animationDelay: `${index * 60}ms` }}
               >
-                <p className={styles.filename}>{doc.filename}</p>
-                <span className={styles.badge}>{doc.source_type}</span>
-                <p className={styles.meta}>
-                  {doc.page_count != null ? `${doc.page_count} pages` : 'No page count'}
-                  {' · '}
-                  {new Date(doc.upload_date).toLocaleDateString(undefined, {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
-                  })}
+                <p className={styles.filename}>
+                  {doc.filename}
                 </p>
+
+                <span className={styles.badge}>
+                  {doc.source_type}
+                </span>
+
+                <p className={styles.meta}>
+                  {doc.page_count != null
+                    ? `${doc.page_count} pages`
+                    : 'No page count'}
+                  {' · '}
+                  {new Date(doc.upload_date).toLocaleDateString(
+                    undefined,
+                    {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    }
+                  )}
+                </p>
+
                 <button
                   className={styles.deleteButton}
                   onClick={() => handleDelete(doc.id)}
                   disabled={deletingId === doc.id}
                 >
-                  {deletingId === doc.id ? 'Deleting…' : 'Delete'}
+                  {deletingId === doc.id
+                    ? 'Deleting…'
+                    : 'Delete'}
                 </button>
               </article>
             ))}
@@ -261,3 +334,4 @@ export default function Documents() {
     </AppShell>
   );
 }
+
