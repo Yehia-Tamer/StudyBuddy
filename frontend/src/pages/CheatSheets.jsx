@@ -3,6 +3,7 @@ import AppShell from '../components/layout/AppShell';
 import { getDocuments } from '../api/documents';
 import { generateCheatSheet, getCheatSheets, deleteCheatSheet } from '../api/cheatSheets';
 import styles from './CheatSheets.module.css';
+import Markdown from '../components/Markdown';
 
 export default function CheatSheets() {
   const [view, setView] = useState('generate'); // 'generate' | 'library'
@@ -237,8 +238,9 @@ export default function CheatSheets() {
                 <p className={styles.sheetPanelMeta}>{activeSheet.topic}</p>
               </div>
             </div>
-
-            <div className={styles.sheetContent}>{activeSheet.content}</div>
+            <div className={styles.sheetContent}>
+              <Markdown content={activeSheet.content} />
+            </div>
           </div>
         )}
       </div>

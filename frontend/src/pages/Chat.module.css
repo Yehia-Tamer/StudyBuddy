@@ -451,3 +451,28 @@ a.sourceChip:hover {
   padding: 48px 24px;
   text-align: center;
 }
+
+.sendingRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sendingHint {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.cancelSendButton {
+  background: none;
+  border: none;
+  color: var(--danger);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 0;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+
+.cancelSendButton:hover {
+  opacity: 0.7;
+}

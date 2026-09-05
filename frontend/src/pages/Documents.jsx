@@ -31,6 +31,7 @@ export default function Documents() {
   const [urlValue, setUrlValue] = useState('');
   const [uploading, setUploading] = useState(false);
   const [fileInputKey, setFileInputKey] = useState(0);
+  const [uploadElapsed, setUploadElapsed] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -47,6 +48,17 @@ export default function Documents() {
         if (!cancelled) setLoading(false);
       }
     }
+
+    useEffect(() => {
+      if (!uploading) {
+        setUploadElapsed(0);
+        return;
+      }
+      const interval = setInterval(() => {
+        setUploadElapsed((prev) => prev + 1);
+      }, 1000);
+      return () => clearInterval(interval);
+    }, [uploading]);
 
     loadDocuments();
     return () => {
@@ -129,7 +141,14 @@ export default function Documents() {
           <h1 className={styles.title}>Documents</h1>
         </header>
 
-        {error && <div className={styles.error}>{error}</div>}
+        {error && (
+        <div className={styles.error}>
+          {error}{' '}
+              <button type="button" className={styles.retryLink} onClick={handleUpload}>
+                Try again
+              </button>
+        </div>
+      )}
 
         <div className={styles.generatePanel}>
           <p className={styles.generateLabel}>Upload a document</p>
@@ -180,6 +199,14 @@ export default function Documents() {
             >
               {uploading ? 'Uploading…' : 'Upload'}
             </button>
+
+            {uploading && uploadElapsed >= 8 && (
+              <p className={styles.uploadHint}>
+                {uploadType === 'audio'
+                  ? 'Transcribing audio can take a minute or two for longer recordings…'
+                  : 'Still working — larger files or slower connections can take a bit…'}
+              </p>
+            )}
           </div>
         </div>
 

@@ -10,6 +10,7 @@ import {
   sendMessage,
 } from '../api/chat';
 import styles from './Chat.module.css';
+import Markdown from '../components/Markdown';
 
 const CONVO_STORAGE_KEY = 'chat_conversation_id';
 const DOC_STORAGE_KEY = 'chat_document_id';
@@ -60,6 +61,9 @@ export default function Chat() {
   const [openingId, setOpeningId] = useState(null);
   const [deletingConvoId, setDeletingConvoId] = useState(null);
 
+  const [sendElapsed, setSendElapsed] = useState(0);
+  const abortControllerRef = useRef(null);
+
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
 
@@ -86,6 +90,17 @@ export default function Chat() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+  if (!sending) {
+    setSendElapsed(0);
+    return;
+  }
+  const interval = setInterval(() => {
+    setSendElapsed((prev) => prev + 1);
+  }, 1000);
+  return () => clearInterval(interval);
+  }, [sending]);
 
   // Try to restore a conversation from a previous visit
   useEffect(() => {
@@ -267,16 +282,24 @@ export default function Chat() {
     }
 
     setSending(true);
-    setError('');
+setError('');
 
-    try {
-      const assistantMessage = await sendMessage(conversation.id, content);
-      setMessages((prev) => [...prev, assistantMessage]);
-    } catch {
-      setError('The assistant could not respond. Your message was sent — try asking again.');
-    } finally {
-      setSending(false);
-    }
+const controller = new AbortController();
+abortControllerRef.current = controller;
+
+try {
+  const assistantMessage = await sendMessage(conversation.id, content, controller.signal);
+  setMessages((prev) => [...prev, assistantMessage]);
+} catch (err) {
+  if (err?.code === 'ERR_CANCELED' || err?.name === 'CanceledError') {
+    setError('Cancelled. Note: the assistant may still finish generating on the server even though you stopped waiting for it.');
+  } else {
+    setError('The assistant could not respond. Your message was sent — try asking again.');
+  }
+} finally {
+  setSending(false);
+  abortControllerRef.current = null;
+}
   }
 
   function handleKeyDown(e) {
@@ -284,6 +307,10 @@ export default function Chat() {
       e.preventDefault();
       handleSend(e);
     }
+  }
+
+  function handleCancelSend() {
+  abortControllerRef.current?.abort();
   }
 
   function handleInputChange(e) {
@@ -503,8 +530,13 @@ export default function Chat() {
                   )}
 
                   <div className={styles.bubbleColumn}>
-                    <div className={styles.bubble}>{message.content}</div>
-
+                    <div className={styles.bubble}>
+                      {message.role === 'assistant' ? (
+                        <Markdown content={message.content} />
+                      ) : (
+                        message.content
+                      )}
+                    </div>
                     {message.sources && message.sources.length > 0 && (
                       <div className={styles.sources}>
                         {message.sources.map((source, i) => {
@@ -536,18 +568,25 @@ export default function Chat() {
               ))}
 
               {sending && (
-                <div className={`${styles.message} ${styles.messageAssistant}`}>
-                  <div className={styles.avatar}>SB</div>
-
-                  <div className={styles.bubbleColumn}>
-                    <div className={`${styles.bubble} ${styles.typingBubble}`}>
-                      <span className={styles.dot} />
-                      <span className={styles.dot} />
-                      <span className={styles.dot} />
-                    </div>
-                  </div>
-                </div>
-              )}
+  <div className={`${styles.message} ${styles.messageAssistant}`}>
+    <div className={styles.avatar}>SB</div>
+    <div className={styles.bubbleColumn}>
+      <div className={`${styles.bubble} ${styles.typingBubble}`}>
+        <span className={styles.dot} />
+        <span className={styles.dot} />
+        <span className={styles.dot} />
+      </div>
+      <div className={styles.sendingRow}>
+        {sendElapsed >= 8 && (
+          <span className={styles.sendingHint}>Still thinking through your documents…</span>
+        )}
+        <button type="button" className={styles.cancelSendButton} onClick={handleCancelSend}>
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
               <div ref={bottomRef} />
             </div>

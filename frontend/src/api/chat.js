@@ -19,7 +19,12 @@ export async function getMessages(conversationId) {
   return data;
 }
 
-export async function sendMessage(conversationId, content) {
-  const { data } = await api.post(`/conversations/${conversationId}/messages`, { content });
+
+export async function sendMessage(conversationId, content, signal) {
+  const { data } = await api.post(
+    `/conversations/${conversationId}/messages`,
+    { content },
+    { signal }
+  );
   return data;
 }
