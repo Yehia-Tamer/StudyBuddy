@@ -1,13 +1,36 @@
+// frontend/src/pages/Documents.jsx
 import { useEffect, useState } from 'react';
-import { getDocuments, deleteDocument } from '../api/documents';
+import {
+  getDocuments,
+  deleteDocument,
+  uploadPdfDocument,
+  uploadPptxDocument,
+  uploadAudioDocument,
+  uploadYoutubeDocument,
+  uploadWebDocument,
+} from '../api/documents';
 import AppShell from '../components/layout/AppShell';
 import styles from './Documents.module.css';
+
+const DOCUMENT_TYPES = [
+  { value: 'pdf', label: 'PDF', kind: 'file', accept: '.pdf' },
+  { value: 'pptx', label: 'PowerPoint', kind: 'file', accept: '.pptx,.ppt' },
+  { value: 'audio', label: 'Audio', kind: 'file', accept: 'audio/*' },
+  { value: 'youtube', label: 'YouTube', kind: 'url', placeholder: 'Paste a YouTube link' },
+  { value: 'web', label: 'Web Article', kind: 'url', placeholder: 'Paste an article URL' },
+];
 
 export default function Documents() {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [deletingId, setDeletingId] = useState(null);
+
+  const [uploadType, setUploadType] = useState('pdf');
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [urlValue, setUrlValue] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [fileInputKey, setFileInputKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -44,6 +67,60 @@ export default function Documents() {
     }
   }
 
+  function handleTypeChange(type) {
+    setUploadType(type);
+    setSelectedFile(null);
+    setUrlValue('');
+    setError('');
+    setFileInputKey((prev) => prev + 1);
+  }
+
+  async function handleUpload() {
+    const activeType = DOCUMENT_TYPES.find((t) => t.value === uploadType);
+    if (!activeType) return;
+
+    if (activeType.kind === 'file' && !selectedFile) return;
+    if (activeType.kind === 'url' && !urlValue.trim()) return;
+
+    setUploading(true);
+    setError('');
+
+    try {
+      let newDocument;
+
+      switch (uploadType) {
+        case 'pdf':
+          newDocument = await uploadPdfDocument(selectedFile);
+          break;
+        case 'pptx':
+          newDocument = await uploadPptxDocument(selectedFile);
+          break;
+        case 'audio':
+          newDocument = await uploadAudioDocument(selectedFile);
+          break;
+        case 'youtube':
+          newDocument = await uploadYoutubeDocument(urlValue.trim());
+          break;
+        case 'web':
+          newDocument = await uploadWebDocument(urlValue.trim());
+          break;
+        default:
+          return;
+      }
+
+      setDocuments((prev) => [newDocument, ...prev]);
+      setSelectedFile(null);
+      setUrlValue('');
+      setFileInputKey((prev) => prev + 1);
+    } catch {
+      setError('Could not upload that document. Try again.');
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  const activeType = DOCUMENT_TYPES.find((t) => t.value === uploadType);
+
   return (
     <AppShell>
       <div className={styles.page}>
@@ -53,6 +130,58 @@ export default function Documents() {
         </header>
 
         {error && <div className={styles.error}>{error}</div>}
+
+        <div className={styles.generatePanel}>
+          <p className={styles.generateLabel}>Upload a document</p>
+          <div className={styles.docChips}>
+            {DOCUMENT_TYPES.map((type) => (
+              <button
+                key={type.value}
+                type="button"
+                className={
+                  uploadType === type.value
+                    ? `${styles.docChip} ${styles.docChipActive}`
+                    : styles.docChip
+                }
+                onClick={() => handleTypeChange(type.value)}
+              >
+                {type.label}
+              </button>
+            ))}
+          </div>
+
+          <div className={styles.generateRow}>
+            {activeType.kind === 'file' ? (
+              <input
+                key={fileInputKey}
+                type="file"
+                accept={activeType.accept}
+                onChange={(e) => setSelectedFile(e.target.files[0] || null)}
+                className={styles.fileInput}
+              />
+            ) : (
+              <input
+                type="text"
+                placeholder={activeType.placeholder}
+                value={urlValue}
+                onChange={(e) => setUrlValue(e.target.value)}
+                className={styles.urlInput}
+              />
+            )}
+
+            <button
+              type="button"
+              className={styles.generateButton}
+              onClick={handleUpload}
+              disabled={
+                uploading ||
+                (activeType.kind === 'file' ? !selectedFile : !urlValue.trim())
+              }
+            >
+              {uploading ? 'Uploading…' : 'Upload'}
+            </button>
+          </div>
+        </div>
 
         {loading && (
           <div className={styles.grid}>
