@@ -15,11 +15,13 @@ class StudyPlanItemLLM(BaseModel):
     subtopics:list[str]=Field(description="The subtopics associated with the material to focus on")
 
 class StudyPlanLLM(BaseModel):
+    title:str=Field(description='The title for the study plan.')
     items:list[StudyPlanItemLLM]=Field(description="An ordered list of study plan items, most important first")
 
 study_plan_parser=JsonOutputParser(pydantic_object=StudyPlanLLM)
 
 STUDY_PLAN_PROMPT = PromptTemplate(template="""You are a study assistant. Based on the following document content, create a personalized study plan. Break the material into distinct topics, assign each a priority based on complexity/importance, priority should ne high/medium/low only, estimate study time in minutes, and list specific subtopics or questions to focus on for each.
+Also, generate a title for the study plan based on the document provided.
 
 Document content:
 {context}
@@ -59,7 +61,7 @@ def generate_study_plan(user_id: int, document_ids: list[int]):
         try:
             chain=STUDY_PLAN_PROMPT | llm | study_plan_parser
             response = chain.invoke({"context": context})
-            return response["items"]
+            return response
         except ResourceExhausted as e:
             last_error=e
             continue

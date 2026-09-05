@@ -17,16 +17,16 @@ def generate_and_save_study_plan(user_id:int,document_ids:list[int],db:Session):
         if document.user_id!=user_id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="User not authorized")
 
-    generated_items=study_plan_chain.generate_study_plan(user_id,document_ids)
+    response=study_plan_chain.generate_study_plan(user_id,document_ids)
 
-    study_plan=models.StudyPlan(user_id=user_id,documents=documents)
+    study_plan=models.StudyPlan(user_id=user_id,documents=documents,title=response['title'])
     db.add(study_plan)
     db.commit()
     db.refresh(study_plan)
 
     saved_items=[]
 
-    for item in generated_items:
+    for item in response['items']:
         plan_item=models.StudyPlanItem(
             study_plan_id=study_plan.id,
             topic=item["topic"],

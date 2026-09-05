@@ -70,6 +70,12 @@ class SourceCitation(BaseModel):
     page: int | None = None
     slide: int | None = None
 
+class ConversationResponse(BaseModel):
+    id:int
+    document_id:Optional[int]
+    created_at:datetime
+    model_config = ConfigDict(from_attributes=True)
+
 class MessageResponse(BaseModel):
     id:int
     role:str
@@ -144,6 +150,7 @@ class StudyPlanItemResponse(BaseModel):
 
 class StudyPlanResponse(BaseModel):
     id:int
+    title:str
     created_at:datetime
     items:list[StudyPlanItemResponse]
     document_ids: list[int]
@@ -155,6 +162,7 @@ class StudyPlanResponse(BaseModel):
         if hasattr(obj, 'documents'):
             return {
                 "id": obj.id,
+                'title': obj.title,
                 "created_at": obj.created_at,
                 "items": obj.items,
                 "document_ids": [d.id for d in obj.documents],

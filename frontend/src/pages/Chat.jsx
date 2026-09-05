@@ -1,8 +1,13 @@
-
 import { useEffect, useRef, useState } from 'react';
 import AppShell from '../components/layout/AppShell';
 import { getDocuments } from '../api/documents';
-import { createConversation, deleteConversation, getMessages, sendMessage } from '../api/chat';
+import {
+  createConversation,
+  deleteConversation,
+  getConversations,
+  getMessages,
+  sendMessage,
+} from '../api/chat';
 import styles from './Chat.module.css';
 
 const CONVO_STORAGE_KEY = 'chat_conversation_id';
@@ -29,9 +34,16 @@ function sourceHref(source) {
   return source.link || source.source_url || null;
 }
 
+function conversationTitle(convo, documents) {
+  if (!convo.document_id) return 'General chat';
+  return documents.find((d) => d.id === convo.document_id)?.filename || 'Document chat';
+}
+
 export default function Chat() {
   const [documents, setDocuments] = useState([]);
   const [docsLoading, setDocsLoading] = useState(true);
+
+  const [tab, setTab] = useState('chat'); // 'chat' | 'list'
 
   const [conversation, setConversation] = useState(null);
   const [selectedDocId, setSelectedDocId] = useState(null); // used only before a chat starts
@@ -42,14 +54,21 @@ export default function Chat() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
 
+  const [conversationList, setConversationList] = useState(null); // null = not fetched yet
+  const [listLoading, setListLoading] = useState(false);
+  const [openingId, setOpeningId] = useState(null);
+  const [deletingConvoId, setDeletingConvoId] = useState(null);
+
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
 
-  // Load documents for the picker
+  // Load documents for the picker + for labeling conversations by document
   useEffect(() => {
     let cancelled = false;
+
     async function loadDocs() {
       setDocsLoading(true);
+
       try {
         const data = await getDocuments();
         if (!cancelled) setDocuments(data);
@@ -59,7 +78,9 @@ export default function Chat() {
         if (!cancelled) setDocsLoading(false);
       }
     }
+
     loadDocs();
+
     return () => {
       cancelled = true;
     };
@@ -76,24 +97,29 @@ export default function Chat() {
     }
 
     let cancelled = false;
+
     async function restore() {
       try {
         const history = await getMessages(storedId);
+
         if (cancelled) return;
+
         setConversation({
           id: Number(storedId),
           document_id: storedDocId ? Number(storedDocId) : null,
         });
+
         setMessages(history);
       } catch {
-        // conversation no longer exists — clear stale storage and start fresh
         localStorage.removeItem(CONVO_STORAGE_KEY);
         localStorage.removeItem(DOC_STORAGE_KEY);
       } finally {
         if (!cancelled) setRestoring(false);
       }
     }
+
     restore();
+
     return () => {
       cancelled = true;
     };
@@ -104,19 +130,52 @@ export default function Chat() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, sending]);
 
+  async function loadConversationList() {
+    setListLoading(true);
+    setError('');
+
+    try {
+      const data = await getConversations();
+      setConversationList(data);
+    } catch {
+      setError('Could not load your chat history.');
+    } finally {
+      setListLoading(false);
+    }
+  }
+
+  function switchToList() {
+    setTab('list');
+
+    if (conversationList === null) {
+      loadConversationList();
+    }
+  }
+
+  function switchToChat() {
+    setTab('chat');
+  }
+
   async function handleStartChat() {
     setError('');
+
     try {
       const docId = selectedDocId || null;
       const convo = await createConversation(docId);
+
       setConversation(convo);
       setMessages([]);
+
       localStorage.setItem(CONVO_STORAGE_KEY, convo.id);
+
       if (docId) {
         localStorage.setItem(DOC_STORAGE_KEY, docId);
       } else {
         localStorage.removeItem(DOC_STORAGE_KEY);
       }
+
+      // keep "My chats" in sync if it's already been loaded this visit
+      setConversationList((prev) => (prev ? [convo, ...prev] : prev));
     } catch {
       setError('Could not start a new chat. Try again.');
     }
@@ -126,21 +185,86 @@ export default function Chat() {
     if (conversation) {
       try {
         await deleteConversation(conversation.id);
+
+        setConversationList((prev) =>
+          prev ? prev.filter((c) => c.id !== conversation.id) : prev
+        );
       } catch {
         // if it's already gone server-side, that's fine — we're resetting anyway
       }
     }
+
     localStorage.removeItem(CONVO_STORAGE_KEY);
     localStorage.removeItem(DOC_STORAGE_KEY);
+
     setConversation(null);
     setMessages([]);
     setSelectedDocId(null);
     setError('');
+    setTab('chat');
+  }
+
+  function handleBackToList() {
+    switchToList();
+  }
+
+  async function handleOpenConversation(convo) {
+    setError('');
+    setOpeningId(convo.id);
+
+    try {
+      const history = await getMessages(convo.id);
+
+      setConversation(convo);
+      setMessages(history);
+
+      localStorage.setItem(CONVO_STORAGE_KEY, convo.id);
+
+      if (convo.document_id) {
+        localStorage.setItem(DOC_STORAGE_KEY, convo.document_id);
+      } else {
+        localStorage.removeItem(DOC_STORAGE_KEY);
+      }
+
+      setTab('chat');
+    } catch {
+      setError('Could not open that chat.');
+    } finally {
+      setOpeningId(null);
+    }
+  }
+
+  async function handleDeleteConversation(convoId) {
+    if (!window.confirm('Delete this chat? This cannot be undone.')) return;
+
+    setDeletingConvoId(convoId);
+    setError('');
+
+    try {
+      await deleteConversation(convoId);
+
+      setConversationList((prev) =>
+        prev ? prev.filter((c) => c.id !== convoId) : prev
+      );
+
+      if (conversation?.id === convoId) {
+        localStorage.removeItem(CONVO_STORAGE_KEY);
+        localStorage.removeItem(DOC_STORAGE_KEY);
+        setConversation(null);
+        setMessages([]);
+      }
+    } catch {
+      setError('Could not delete that chat. Try again.');
+    } finally {
+      setDeletingConvoId(null);
+    }
   }
 
   async function handleSend(e) {
     e.preventDefault();
+
     const content = input.trim();
+
     if (!content || sending || !conversation) return;
 
     const optimisticUserMessage = {
@@ -153,7 +277,11 @@ export default function Chat() {
 
     setMessages((prev) => [...prev, optimisticUserMessage]);
     setInput('');
-    if (textareaRef.current) textareaRef.current.style.height = 'auto';
+
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+    }
+
     setSending(true);
     setError('');
 
@@ -176,7 +304,9 @@ export default function Chat() {
 
   function handleInputChange(e) {
     setInput(e.target.value);
+
     const el = textareaRef.current;
+
     if (el) {
       el.style.height = 'auto';
       el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
@@ -194,162 +324,274 @@ export default function Chat() {
   return (
     <AppShell>
       <div className={styles.page}>
-        {!conversation && (
-          <div className={styles.setup}>
-            <p className={styles.eyebrow}>Ask your material</p>
-            <h1 className={styles.title}>Chat</h1>
-            <p className={styles.setupHint}>
-              Chat about one document, or start a general chat across everything you've uploaded.
-            </p>
+        <div className={styles.tabs}>
+          <button
+            type="button"
+            className={tab === 'chat' ? `${styles.tab} ${styles.tabActive}` : styles.tab}
+            onClick={switchToChat}
+          >
+            Chat
+          </button>
 
-            {error && <div className={styles.error}>{error}</div>}
+          <button
+            type="button"
+            className={tab === 'list' ? `${styles.tab} ${styles.tabActive}` : styles.tab}
+            onClick={switchToList}
+          >
+            My chats
+          </button>
+        </div>
 
-            {!docsLoading && (
-              <div className={styles.docChips}>
+        {error && <div className={styles.error}>{error}</div>}
+
+        {tab === 'chat' && (
+          <>
+            {!conversation && (
+              <div className={styles.setup}>
+                <p className={styles.eyebrow}>Ask your material</p>
+                <h1 className={styles.title}>Chat</h1>
+
+                <p className={styles.setupHint}>
+                  Chat about one document, or start a general chat across everything you've uploaded.
+                </p>
+
+                {!docsLoading && (
+                  <div className={styles.docChips}>
+                    <button
+                      type="button"
+                      className={
+                        selectedDocId === null
+                          ? `${styles.docChip} ${styles.docChipActive}`
+                          : styles.docChip
+                      }
+                      onClick={() => setSelectedDocId(null)}
+                    >
+                      General (all context)
+                    </button>
+
+                    {documents.map((doc) => (
+                      <button
+                        key={doc.id}
+                        type="button"
+                        className={
+                          selectedDocId === doc.id
+                            ? `${styles.docChip} ${styles.docChipActive}`
+                            : styles.docChip
+                        }
+                        onClick={() => setSelectedDocId(doc.id)}
+                      >
+                        {doc.filename}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 <button
                   type="button"
-                  className={
-                    selectedDocId === null
-                      ? `${styles.docChip} ${styles.docChipActive}`
-                      : styles.docChip
-                  }
-                  onClick={() => setSelectedDocId(null)}
+                  className={styles.startButton}
+                  onClick={handleStartChat}
                 >
-                  General (all context)
+                  Start chat
                 </button>
-
-                {documents.map((doc) => (
-                  <button
-                    key={doc.id}
-                    type="button"
-                    className={
-                      selectedDocId === doc.id
-                        ? `${styles.docChip} ${styles.docChipActive}`
-                        : styles.docChip
-                    }
-                    onClick={() => setSelectedDocId(doc.id)}
-                  >
-                    {doc.filename}
-                  </button>
-                ))}
               </div>
             )}
 
-            <button type="button" className={styles.startButton} onClick={handleStartChat}>
-              Start chat
-            </button>
-          </div>
+            {conversation && (
+              <div className={styles.chatShell}>
+                <div className={styles.chatHeader}>
+                  <div className={styles.chatHeaderLeft}>
+                    <button
+                      type="button"
+                      className={styles.backButton}
+                      onClick={handleBackToList}
+                    >
+                      ← Back
+                    </button>
+
+                    <span className={styles.chatHeaderLabel}>
+                      {conversationTitle(conversation, documents)}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    className={styles.newChatButton}
+                    onClick={handleNewChat}
+                  >
+                    New chat
+                  </button>
+                </div>
+
+                <div className={styles.messages}>
+                  {messages.length === 0 && (
+                    <div className={styles.emptyThread}>
+                      <p className={styles.emptyTitle}>Ask anything</p>
+
+                      <p className={styles.emptyDetail}>
+                        Ask a question about your material and I'll answer using it directly.
+                      </p>
+                    </div>
+                  )}
+
+                  {messages.map((message) => (
+                    <div
+                      key={message.id}
+                      className={
+                        message.role === 'user'
+                          ? `${styles.message} ${styles.messageUser}`
+                          : `${styles.message} ${styles.messageAssistant}`
+                      }
+                    >
+                      {message.role === 'assistant' && (
+                        <div className={styles.avatar}>SB</div>
+                      )}
+
+                      <div className={styles.bubbleColumn}>
+                        <div className={styles.bubble}>{message.content}</div>
+
+                        {message.sources && message.sources.length > 0 && (
+                          <div className={styles.sources}>
+                            {message.sources.map((source, i) => {
+                              const href = sourceHref(source);
+
+                              return href ? (
+                                <a
+                                  key={i}
+                                  href={href}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className={styles.sourceChip}
+                                >
+                                  {sourceLabel(source)}
+                                </a>
+                              ) : (
+                                <span
+                                  key={i}
+                                  className={styles.sourceChip}
+                                >
+                                  {sourceLabel(source)}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+
+                  {sending && (
+                    <div className={`${styles.message} ${styles.messageAssistant}`}>
+                      <div className={styles.avatar}>SB</div>
+
+                      <div className={styles.bubbleColumn}>
+                        <div className={`${styles.bubble} ${styles.typingBubble}`}>
+                          <span className={styles.dot} />
+                          <span className={styles.dot} />
+                          <span className={styles.dot} />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div ref={bottomRef} />
+                </div>
+
+                <form className={styles.inputBar} onSubmit={handleSend}>
+                  <textarea
+                    ref={textareaRef}
+                    className={styles.textarea}
+                    placeholder="Ask a question…"
+                    value={input}
+                    onChange={handleInputChange}
+                    onKeyDown={handleKeyDown}
+                    rows={1}
+                  />
+
+                  <button
+                    type="submit"
+                    className={styles.sendButton}
+                    disabled={sending || !input.trim()}
+                  >
+                    {sending ? '…' : 'Send'}
+                  </button>
+                </form>
+              </div>
+            )}
+          </>
         )}
 
-        {conversation && (
-          <div className={styles.chatShell}>
-            <div className={styles.chatHeader}>
-              <span className={styles.chatHeaderLabel}>
-                {conversation.document_id
-                  ? documents.find((d) => d.id === conversation.document_id)?.filename ||
-                    'Document chat'
-                  : 'General chat'}
-              </span>
+        {tab === 'list' && (
+          <div className={styles.convoList}>
+            {listLoading && (
+              <>
+                <div className={styles.skeletonRow} />
+                <div className={styles.skeletonRow} />
+                <div className={styles.skeletonRow} />
+              </>
+            )}
 
-              <button type="button" className={styles.newChatButton} onClick={handleNewChat}>
-                New chat
-              </button>
-            </div>
-
-            {error && <div className={styles.error}>{error}</div>}
-
-            <div className={styles.messages}>
-              {messages.length === 0 && (
-                <div className={styles.emptyThread}>
-                  <p className={styles.emptyTitle}>Ask anything</p>
+            {!listLoading &&
+              conversationList !== null &&
+              conversationList.length === 0 && (
+                <div className={styles.empty}>
+                  <p className={styles.emptyTitle}>No chats yet</p>
                   <p className={styles.emptyDetail}>
-                    Ask a question about your material and I'll answer using it directly.
+                    Start a chat and it'll show up here.
                   </p>
                 </div>
               )}
 
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={
-                    message.role === 'user'
-                      ? `${styles.message} ${styles.messageUser}`
-                      : `${styles.message} ${styles.messageAssistant}`
-                  }
-                >
-                  {message.role === 'assistant' && (
-                    <div className={styles.avatar}>SB</div>
-                  )}
+            {!listLoading &&
+              conversationList !== null &&
+              conversationList
+                .slice()
+                .sort(
+                  (a, b) =>
+                    new Date(b.created_at) - new Date(a.created_at)
+                )
+                .map((convo, index) => (
+                  <div
+                    key={convo.id}
+                    className={styles.convoRow}
+                    style={{ animationDelay: `${index * 40}ms` }}
+                  >
+                    <button
+                      type="button"
+                      className={styles.convoRowMain}
+                      onClick={() => handleOpenConversation(convo)}
+                      disabled={openingId === convo.id}
+                    >
+                      <span className={styles.convoTitle}>
+                        {conversationTitle(convo, documents)}
+                      </span>
 
-                  <div className={styles.bubbleColumn}>
-                    <div className={styles.bubble}>{message.content}</div>
+                      <span className={styles.convoDate}>
+                        {openingId === convo.id
+                          ? 'Opening…'
+                          : new Date(convo.created_at).toLocaleDateString(
+                              undefined,
+                              {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric',
+                              }
+                            )}
+                      </span>
+                    </button>
 
-                    {message.sources && message.sources.length > 0 && (
-                      <div className={styles.sources}>
-                        {message.sources.map((source, i) => {
-                          const href = sourceHref(source);
-
-                          return href ? (
-                            <a
-                              key={i}
-                              href={href}
-                              target="_blank"
-                              rel="noreferrer"
-                              className={styles.sourceChip}
-                            >
-                              {sourceLabel(source)}
-                            </a>
-                          ) : (
-                            <span key={i} className={styles.sourceChip}>
-                              {sourceLabel(source)}
-                            </span>
-                          );
-                        })}
-                      </div>
-                    )}
+                    <button
+                      type="button"
+                      className={styles.deleteButton}
+                      onClick={() => handleDeleteConversation(convo.id)}
+                      disabled={deletingConvoId === convo.id}
+                    >
+                      {deletingConvoId === convo.id ? 'Deleting…' : 'Delete'}
+                    </button>
                   </div>
-                </div>
-              ))}
-
-              {sending && (
-                <div className={`${styles.message} ${styles.messageAssistant}`}>
-                  <div className={styles.avatar}>SB</div>
-                  <div className={styles.bubbleColumn}>
-                    <div className={`${styles.bubble} ${styles.typingBubble}`}>
-                      <span className={styles.dot} />
-                      <span className={styles.dot} />
-                      <span className={styles.dot} />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div ref={bottomRef} />
-            </div>
-
-            <form className={styles.inputBar} onSubmit={handleSend}>
-              <textarea
-                ref={textareaRef}
-                className={styles.textarea}
-                placeholder="Ask a question…"
-                value={input}
-                onChange={handleInputChange}
-                onKeyDown={handleKeyDown}
-                rows={1}
-              />
-
-              <button
-                type="submit"
-                className={styles.sendButton}
-                disabled={sending || !input.trim()}
-              >
-                {sending ? '…' : 'Send'}
-              </button>
-            </form>
+                ))}
           </div>
         )}
       </div>
     </AppShell>
   );
 }
-

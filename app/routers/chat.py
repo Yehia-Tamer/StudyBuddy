@@ -23,3 +23,11 @@ def send_message(conversation_id:int,request:schemas.MessageCreate,current_user:
 @router.get('/{conversation_id}/messages',status_code=status.HTTP_200_OK,response_model=List[schemas.MessageResponse])
 def get_messages(conversation_id:int,current_user:schemas.UserResponse=Depends(oauth2.get_current_user),db:Session=Depends(database.get_db)):
     return chat.get_messages(conversation_id,current_user.id,db)
+
+@router.get('/',status_code=status.HTTP_200_OK,response_model=List[schemas.ConversationResponse])
+def get_conversations(current_user:schemas.UserResponse=Depends(oauth2.get_current_user),db:Session=Depends(database.get_db)):
+    return chat.get_conversations(current_user.id,db)
+
+@router.get('/{conversation_id}',status_code=status.HTTP_200_OK,response_model=schemas.ConversationResponse)
+def get_conversation(conversation_id:int,current_user:schemas.UserResponse=Depends(oauth2.get_current_user),db:Session=Depends(database.get_db)):
+    return chat.get_conversation(conversation_id,current_user.id,db)

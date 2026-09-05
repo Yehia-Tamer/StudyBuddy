@@ -9,6 +9,11 @@ export async function deleteConversation(conversationId) {
   await api.delete(`/conversations/${conversationId}`);
 }
 
+export async function getConversations() {
+  const { data } = await api.get('/conversations/');
+  return data;
+}
+
 export async function getMessages(conversationId) {
   const { data } = await api.get(`/conversations/${conversationId}/messages`);
   return data;

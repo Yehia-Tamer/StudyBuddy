@@ -99,6 +99,7 @@ class FlashCard(Base):
 class StudyPlan(Base):
     __tablename__="study_plans"
     id=Column(Integer, primary_key=True)
+    title=Column(String,nullable=False)
     user_id=Column(Integer, ForeignKey("users.id"))
     created_at = Column(DateTime, default=datetime.utcnow)
 

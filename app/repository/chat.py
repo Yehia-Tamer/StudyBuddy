@@ -27,6 +27,9 @@ def get_conversation(conversation_id: int, user_id: int, db: Session):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User not authorized")
     return conversation
 
+def get_conversations(user_id:int,db:Session):
+    return db.query(models.Conversation).filter(models.Conversation.user_id==user_id).all()
+
 def delete_conversation(conversation_id:int,user_id:int,db:Session):
     conversation=get_conversation(conversation_id,user_id,db)
     db.delete(conversation)
