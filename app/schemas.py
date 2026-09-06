@@ -11,54 +11,63 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str
 
-    @field_validator('password')
+    @field_validator("password")
     @classmethod
     def validate_password(cls, value):
         if len(value) < 8:
             raise ValueError("Must be at least 8 characters")
-        if not re.search(r'[A-Z]', value):
+        if not re.search(r"[A-Z]", value):
             raise ValueError("Must contain an uppercase letter")
-        if not re.search(r'[a-z]', value):
+        if not re.search(r"[a-z]", value):
             raise ValueError("Must contain a lowercase letter")
         if not re.search(r'[!@#$%^&*(),.?":{}|<>]', value):
             raise ValueError("Must contain a special character")
         return value
 
+
 class UserResponse(BaseModel):
-    id:int
+    id: int
     username: str
     email: str
     model_config = ConfigDict(from_attributes=True)
+
 
 class UserLogin(BaseModel):
     username: str
     password: str
 
+
 class DocumentResponse(BaseModel):
-    id:int
+    id: int
     filename: str
-    upload_date:datetime
+    upload_date: datetime
     page_count: int | None
-    source_type:str
+    source_type: str
     model_config = ConfigDict(from_attributes=True)
 
+
 class YouTubeDocumentRequest(BaseModel):
-    url:str
+    url: str
+
 
 class WebDocumentRequest(BaseModel):
     url: str
 
+
 class ConversationCreate(BaseModel):
-    document_id: Optional[int]=None
+    document_id: Optional[int] = None
+
 
 class ConversationResponse(BaseModel):
-    id:int
-    document_id:Optional[int]
-    created_at:datetime
+    id: int
+    document_id: Optional[int]
+    created_at: datetime
     model_config = ConfigDict(from_attributes=True)
 
+
 class MessageCreate(BaseModel):
-    content:str
+    content: str
+
 
 class SourceCitation(BaseModel):
     source_type: str
@@ -70,21 +79,23 @@ class SourceCitation(BaseModel):
     page: int | None = None
     slide: int | None = None
 
+
 class ConversationResponse(BaseModel):
-    id:int
-    document_id:Optional[int]
-    created_at:datetime
+    id: int
+    document_id: Optional[int]
+    created_at: datetime
     model_config = ConfigDict(from_attributes=True)
+
 
 class MessageResponse(BaseModel):
-    id:int
-    role:str
-    content:str
-    timestamp:datetime
-    sources:list[SourceCitation]
+    id: int
+    role: str
+    content: str
+    timestamp: datetime
+    sources: list[SourceCitation]
     model_config = ConfigDict(from_attributes=True)
 
-    @field_validator('sources', mode='before')
+    @field_validator("sources", mode="before")
     @classmethod
     def parse_sources(cls, value):
         if isinstance(value, str):
@@ -93,43 +104,49 @@ class MessageResponse(BaseModel):
             return []
         return value
 
+
 class FlashCardResponse(BaseModel):
-    id:int
-    type:str
-    question:str
-    answer:str
-    created_at:datetime
-    document_ids:list[int]
+    id: int
+    type: str
+    question: str
+    answer: str
+    created_at: datetime
+    document_ids: list[int]
     model_config = ConfigDict(from_attributes=True)
 
-    @model_validator(mode='before')
+    @model_validator(mode="before")
     @classmethod
     def extract_document_ids(cls, obj):
-        if hasattr(obj, 'documents'):
+        if hasattr(obj, "documents"):
             return {
                 "id": obj.id,
-                "type":obj.type,
-                "question":obj.question,
-                "answer":obj.answer,
-                "created_at":obj.created_at,
+                "type": obj.type,
+                "question": obj.question,
+                "answer": obj.answer,
+                "created_at": obj.created_at,
                 "document_ids": [d.id for d in obj.documents],
             }
         return obj
 
+
 class FlashCardGenerateRequest(BaseModel):
-    count: int = 10 #how many flash cards
-    document_ids:list[int]
+    count: int = 10  # how many flash cards
+    document_ids: list[int]
+
 
 class FlashCardAnswerRequest(BaseModel):
-    user_answer:str
+    user_answer: str
+
 
 class FlashCardAnswerResponse(BaseModel):
-    correct:bool
-    correct_answer:str
-    feedback:str
+    correct: bool
+    correct_answer: str
+    feedback: str
+
 
 class StudyPlanGenerateRequest(BaseModel):
     document_ids: list[int]
+
 
 class StudyPlanItemResponse(BaseModel):
     id: int
@@ -137,47 +154,50 @@ class StudyPlanItemResponse(BaseModel):
     priority: str
     estimated_time: int
     subtopics: list[str]
-    completed:bool
+    completed: bool
 
     model_config = ConfigDict(from_attributes=True)
 
-    @field_validator('subtopics', mode='before')
+    @field_validator("subtopics", mode="before")
     @classmethod
     def parse_subtopics(cls, value):
         if isinstance(value, str):
             return json.loads(value)
         return value
 
+
 class StudyPlanResponse(BaseModel):
-    id:int
-    title:str
-    created_at:datetime
-    items:list[StudyPlanItemResponse]
+    id: int
+    title: str
+    created_at: datetime
+    items: list[StudyPlanItemResponse]
     document_ids: list[int]
     model_config = ConfigDict(from_attributes=True)
 
-    @model_validator(mode='before')
+    @model_validator(mode="before")
     @classmethod
     def extract_document_ids(cls, obj):
-        if hasattr(obj, 'documents'):
+        if hasattr(obj, "documents"):
             return {
                 "id": obj.id,
-                'title': obj.title,
+                "title": obj.title,
                 "created_at": obj.created_at,
                 "items": obj.items,
                 "document_ids": [d.id for d in obj.documents],
             }
         return obj
 
+
 class StudyPlanItemUpdate(BaseModel):
-    completed:bool
+    completed: bool
+
 
 class QuizGenerateRequest(BaseModel):
     document_ids: list[int]
     count: int = 10
-    difficulty:str
+    difficulty: str
 
-    @field_validator('document_ids')
+    @field_validator("document_ids")
     @classmethod
     def validate_not_empty(cls, value):
         if not value:
@@ -186,26 +206,27 @@ class QuizGenerateRequest(BaseModel):
 
 
 class QuizQuestionResponse(BaseModel):
-    id:int
-    type:str
-    question:str
-    answer:str
+    id: int
+    type: str
+    question: str
+    answer: str
+
 
 class QuizResponse(BaseModel):
-    id:int
-    topic:str
-    created_at:datetime
-    time_estimate_minutes:int
-    difficulty:str
-    question_count:int
-    questions:list[QuizQuestionResponse]
+    id: int
+    topic: str
+    created_at: datetime
+    time_estimate_minutes: int
+    difficulty: str
+    question_count: int
+    questions: list[QuizQuestionResponse]
     document_ids: list[int]
     model_config = ConfigDict(from_attributes=True)
 
-    @model_validator(mode='before')
+    @model_validator(mode="before")
     @classmethod
     def extract_document_ids(cls, obj):
-        if hasattr(obj, 'documents'):
+        if hasattr(obj, "documents"):
             return {
                 "id": obj.id,
                 "topic": obj.topic,
@@ -218,21 +239,26 @@ class QuizResponse(BaseModel):
             }
         return obj
 
+
 class QuizGradeRequest(BaseModel):
-    answers:list[str]
+    answers: list[str]
+
 
 class QuestionGradeResponse(BaseModel):
-    correct:bool
-    correct_answer:str
-    feedback:str
+    correct: bool
+    correct_answer: str
+    feedback: str
+
 
 class QuizGradeResponse(BaseModel):
-    score:int
-    total:int
-    results:list[QuestionGradeResponse]
+    score: int
+    total: int
+    results: list[QuestionGradeResponse]
+
 
 class CheatSheetGenerateRequest(BaseModel):
-    document_ids:list[int]
+    document_ids: list[int]
+
 
 class CheatSheetResponse(BaseModel):
     id: int
@@ -243,10 +269,10 @@ class CheatSheetResponse(BaseModel):
     document_ids: list[int]
     model_config = ConfigDict(from_attributes=True)
 
-    @model_validator(mode='before')
+    @model_validator(mode="before")
     @classmethod
     def extract_document_ids(cls, obj):
-        if hasattr(obj, 'documents'):
+        if hasattr(obj, "documents"):
             document_ids = [d.id for d in obj.documents]
             return {
                 "id": obj.id,

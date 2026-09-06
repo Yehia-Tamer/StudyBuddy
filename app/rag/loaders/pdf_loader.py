@@ -7,35 +7,35 @@ from pdf2image import convert_from_path
 pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 POPPLER_PATH = r"C:\poppler-26.02.0\Library\bin"
 
+
 class PDFLoadError(Exception):
     pass
 
-def ocr_pdf(file_path:str)->list[Document]:
-    images=convert_from_path(file_path,poppler_path=POPPLER_PATH)
-    documents=[]
-    for i,img in enumerate(images):
-        text=pytesseract.image_to_string(img,lang="eng")
+
+def ocr_pdf(file_path: str) -> list[Document]:
+    images = convert_from_path(file_path, poppler_path=POPPLER_PATH)
+    documents = []
+    for i, img in enumerate(images):
+        text = pytesseract.image_to_string(img, lang="eng")
         documents.append(
-            Document(page_content=text,metadata={"source":file_path,"page":i})
+            Document(page_content=text, metadata={"source": file_path, "page": i})
         )
     return documents
 
-def load_and_split_pdf(file_path:str):
-    loader=PyPDFLoader(file_path)
-    documents=loader.load()
-    splitter=RecursiveCharacterTextSplitter(
-        chunk_size=800,
-        chunk_overlap=150,
-        separators=["\n\n", "\n", ". ", " ", ""]
+
+def load_and_split_pdf(file_path: str):
+    loader = PyPDFLoader(file_path)
+    documents = loader.load()
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=800, chunk_overlap=150, separators=["\n\n", "\n", ". ", " ", ""]
     )
     chunks = splitter.split_documents(documents)
 
-    if len(chunks)==0:
-        documents=ocr_pdf(file_path)
-        chunks=splitter.split_documents(documents)
+    if len(chunks) == 0:
+        documents = ocr_pdf(file_path)
+        chunks = splitter.split_documents(documents)
 
-    if len(chunks)==0:
+    if len(chunks) == 0:
         raise PDFLoadError("No extractable text found in document")
-
 
     return chunks

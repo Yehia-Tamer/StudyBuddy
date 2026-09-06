@@ -3,6 +3,7 @@ import bcrypt
 import hashlib
 import base64
 
+
 class Hash:
     @staticmethod
     def _prepare(password: str) -> bytes:

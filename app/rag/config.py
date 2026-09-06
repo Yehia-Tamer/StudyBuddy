@@ -1,7 +1,5 @@
-
 from langchain_google_genai import ChatGoogleGenerativeAI
 import tiktoken
-
 
 _encoding = tiktoken.get_encoding("cl100k_base")
 
@@ -12,9 +10,7 @@ def count_tokens(text: str) -> int:
 
 def get_llm(api_key: str):
     return ChatGoogleGenerativeAI(
-        model="gemini-3-flash-preview",
-        google_api_key=api_key,
-        temperature=0.2
+        model="gemini-3-flash-preview", google_api_key=api_key, temperature=0.2
     )
 
 

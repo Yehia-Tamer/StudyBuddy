@@ -11,7 +11,7 @@ class WebArticleError(Exception):
 def fetch_html(url: str) -> str:
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                      "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+        "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
     }
     try:
         response = requests.get(url, headers=headers, timeout=10)
@@ -42,22 +42,26 @@ def fetch_article(url: str) -> dict:
     return {"text": text, "title": title}
 
 
-def load_web_document(url: str, chunk_size: int = 2000, chunk_overlap: int = 300) -> list[Document]:
+def load_web_document(
+    url: str, chunk_size: int = 2000, chunk_overlap: int = 300
+) -> list[Document]:
     article = fetch_article(url)
 
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=chunk_size,
         chunk_overlap=chunk_overlap,
-        separators=["\n\n", "\n", ". ", " ", ""]
+        separators=["\n\n", "\n", ". ", " ", ""],
     )
 
     chunks = splitter.create_documents(
         texts=[article["text"]],
-        metadatas=[{
-            "source_type": "web",
-            "source_url": url,
-            "title": article["title"],
-        }]
+        metadatas=[
+            {
+                "source_type": "web",
+                "source_url": url,
+                "title": article["title"],
+            }
+        ],
     )
 
     return chunks

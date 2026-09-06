@@ -7,10 +7,12 @@ from app.rag.key_rotation import API_KEYS, get_next_key
 from app.rag.vectorstore import get_vectorstore
 from pydantic import BaseModel
 
-class YoutubeTitleLLM(BaseModel):
-    title:str
 
-youtube_title_parser=JsonOutputParser(pydantic_object=YoutubeTitleLLM)
+class YoutubeTitleLLM(BaseModel):
+    title: str
+
+
+youtube_title_parser = JsonOutputParser(pydantic_object=YoutubeTitleLLM)
 
 PROMPT = PromptTemplate(
     template="""
@@ -41,18 +43,18 @@ YouTube Transcript:
 )
 
 
-def generate_youtube_title(transcript:str):
-    last_error=None
+def generate_youtube_title(transcript: str):
+    last_error = None
     for _ in range(len(API_KEYS)):
         key = get_next_key()
         llm = get_llm(key)
 
         try:
-            chain=PROMPT|llm|youtube_title_parser
-            response=chain.invoke({"transcript":transcript})
+            chain = PROMPT | llm | youtube_title_parser
+            response = chain.invoke({"transcript": transcript})
             return response
         except ResourceExhausted as e:
-            last_error=e
+            last_error = e
             continue
 
     raise last_error
