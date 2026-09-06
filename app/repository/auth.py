@@ -39,12 +39,12 @@ def login(request, db):
     )
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
         )
     if not hashing.Hash.verify(request.password, user.hashed_password):
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
         )
     access_token_expires = timedelta(
