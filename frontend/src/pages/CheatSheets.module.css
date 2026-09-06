@@ -3,8 +3,12 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .header {
@@ -46,7 +50,9 @@
   font-weight: 500;
   color: var(--muted);
   border-bottom: 2px solid transparent;
-  transition: color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+  transition:
+    color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out);
 }
 
 .tab:hover {
@@ -86,7 +92,9 @@
   border-radius: 999px;
   padding: 6px 14px;
   font-size: 13px;
-  transition: border-color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out);
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out);
 }
 
 .docChip:hover {
@@ -107,7 +115,9 @@
   padding: 10px 16px;
   font-weight: 600;
   font-size: 13px;
-  transition: background var(--dur-fast) var(--ease-out), transform 80ms var(--ease-out);
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    transform 80ms var(--ease-out);
 }
 
 .generateButton:hover:not(:disabled) {
@@ -143,8 +153,14 @@
 }
 
 @keyframes rise {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .sheetRow:hover {
@@ -242,14 +258,23 @@
 .skeletonBlock {
   height: 160px;
   border-radius: var(--radius);
-  background: linear-gradient(90deg, var(--line) 0%, var(--paper) 50%, var(--line) 100%);
+  background: linear-gradient(
+    90deg,
+    var(--line) 0%,
+    var(--paper) 50%,
+    var(--line) 100%
+  );
   background-size: 200% 100%;
   animation: shimmer 1.4s ease-in-out infinite;
 }
 
 @keyframes shimmer {
-  from { background-position: 200% 0; }
-  to { background-position: -200% 0; }
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
 }
 
 .empty {

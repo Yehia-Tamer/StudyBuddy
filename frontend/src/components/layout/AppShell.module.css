@@ -19,7 +19,9 @@
 }
 
 @media (max-width: 900px) {
-  .sidebar { display: none; } /* mobile nav is a separate exercise — start desktop-first */
+  .sidebar {
+    display: none;
+  } /* mobile nav is a separate exercise — start desktop-first */
 }
 
 .brand {
@@ -48,7 +50,9 @@
   color: rgba(255, 255, 255, 0.7);
   font-size: 14px;
   font-weight: 500;
-  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
 }
 
 .navLink:hover {
@@ -67,5 +71,7 @@
 }
 
 @media (max-width: 900px) {
-  .main { padding: 24px; }
+  .main {
+    padding: 24px;
+  }
 }

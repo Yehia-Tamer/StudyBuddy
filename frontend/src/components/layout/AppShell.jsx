@@ -1,14 +1,14 @@
-import { NavLink } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import styles from './AppShell.module.css';
+import { NavLink } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import styles from "./AppShell.module.css";
 
 const NAV_ITEMS = [
-  { to: '/documents', label: 'Documents' },
-  { to: '/chat', label: 'Chat' },
-  { to: '/flashcards', label: 'Flashcards' },
-  { to: '/quizzes', label: 'Quizzes' },
-  { to: '/study-plans', label: 'Study plans' },
-  { to: '/cheat-sheets', label: 'Cheat sheets' },
+  { to: "/documents", label: "Documents" },
+  { to: "/chat", label: "Chat" },
+  { to: "/flashcards", label: "Flashcards" },
+  { to: "/quizzes", label: "Quizzes" },
+  { to: "/study-plans", label: "Study plans" },
+  { to: "/cheat-sheets", label: "Cheat sheets" },
 ];
 
 export default function AppShell({ children }) {
@@ -24,7 +24,9 @@ export default function AppShell({ children }) {
               <NavLink
                 to={item.to}
                 className={({ isActive }) =>
-                  isActive ? `${styles.navLink} ${styles.navLinkActive}` : styles.navLink
+                  isActive
+                    ? `${styles.navLink} ${styles.navLinkActive}`
+                    : styles.navLink
                 }
               >
                 {item.label}
@@ -32,7 +34,18 @@ export default function AppShell({ children }) {
             </li>
           ))}
         </ul>
-        <button onClick={logout} style={{ marginTop: 'auto', background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', textAlign: 'left', padding: '10px 12px', fontSize: 14 }}>
+        <button
+          onClick={logout}
+          style={{
+            marginTop: "auto",
+            background: "none",
+            border: "none",
+            color: "rgba(255,255,255,0.6)",
+            textAlign: "left",
+            padding: "10px 12px",
+            fontSize: 14,
+          }}
+        >
           Log out
         </button>
       </aside>

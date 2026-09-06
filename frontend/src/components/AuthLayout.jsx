@@ -1,9 +1,19 @@
-import styles from './AuthLayout.module.css';
+import styles from "./AuthLayout.module.css";
 
 const FEATURES = [
-  { label: 'Upload', detail: 'PDFs, slide decks, lecture audio, YouTube videos, or web articles' },
-  { label: 'Ask', detail: 'Chat with your material, grounded in the source with citations' },
-  { label: 'Review', detail: 'Flashcards, quizzes, cheat sheets, and a study plan — generated for you' },
+  {
+    label: "Upload",
+    detail: "PDFs, slide decks, lecture audio, YouTube videos, or web articles",
+  },
+  {
+    label: "Ask",
+    detail: "Chat with your material, grounded in the source with citations",
+  },
+  {
+    label: "Review",
+    detail:
+      "Flashcards, quizzes, cheat sheets, and a study plan — generated for you",
+  },
 ];
 
 export default function AuthLayout({ eyebrow, title, subtitle, children }) {

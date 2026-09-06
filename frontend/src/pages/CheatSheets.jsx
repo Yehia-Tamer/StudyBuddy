@@ -1,12 +1,16 @@
-import { useEffect, useState } from 'react';
-import AppShell from '../components/layout/AppShell';
-import { getDocuments } from '../api/documents';
-import { generateCheatSheet, getCheatSheets, deleteCheatSheet } from '../api/cheatSheets';
-import styles from './CheatSheets.module.css';
-import Markdown from '../components/Markdown';
+import { useEffect, useState } from "react";
+import AppShell from "../components/layout/AppShell";
+import { getDocuments } from "../api/documents";
+import {
+  generateCheatSheet,
+  getCheatSheets,
+  deleteCheatSheet,
+} from "../api/cheatSheets";
+import styles from "./CheatSheets.module.css";
+import Markdown from "../components/Markdown";
 
 export default function CheatSheets() {
-  const [view, setView] = useState('generate'); // 'generate' | 'library'
+  const [view, setView] = useState("generate"); // 'generate' | 'library'
 
   const [documents, setDocuments] = useState([]);
   const [docsLoading, setDocsLoading] = useState(true);
@@ -19,7 +23,7 @@ export default function CheatSheets() {
 
   const [activeSheet, setActiveSheet] = useState(null);
 
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -29,7 +33,7 @@ export default function CheatSheets() {
         const data = await getDocuments();
         if (!cancelled) setDocuments(data);
       } catch {
-        if (!cancelled) setError('Could not load your documents.');
+        if (!cancelled) setError("Could not load your documents.");
       } finally {
         if (!cancelled) setDocsLoading(false);
       }
@@ -42,45 +46,47 @@ export default function CheatSheets() {
 
   async function loadLibrary() {
     setLibraryLoading(true);
-    setError('');
+    setError("");
     try {
       const data = await getCheatSheets();
       setLibrarySheets(data);
     } catch {
-      setError('Could not load your cheat sheets.');
+      setError("Could not load your cheat sheets.");
     } finally {
       setLibraryLoading(false);
     }
   }
 
   function switchToLibrary() {
-    setView('library');
+    setView("library");
     if (librarySheets === null) loadLibrary();
   }
 
   function switchToGenerate() {
-    setView('generate');
+    setView("generate");
   }
 
   function toggleDoc(docId) {
     setSelectedDocIds((prev) =>
-      prev.includes(docId) ? prev.filter((id) => id !== docId) : [...prev, docId]
+      prev.includes(docId)
+        ? prev.filter((id) => id !== docId)
+        : [...prev, docId],
     );
   }
 
   async function handleGenerate() {
     if (selectedDocIds.length === 0) {
-      setError('Pick at least one document first.');
+      setError("Pick at least one document first.");
       return;
     }
     setGenerating(true);
-    setError('');
+    setError("");
     try {
       const sheet = await generateCheatSheet(selectedDocIds);
       setActiveSheet(sheet);
       setLibrarySheets((prev) => (prev === null ? null : [sheet, ...prev]));
     } catch {
-      setError('Could not generate a cheat sheet from those documents.');
+      setError("Could not generate a cheat sheet from those documents.");
     } finally {
       setGenerating(false);
     }
@@ -88,7 +94,7 @@ export default function CheatSheets() {
 
   function handleOpenSheet(sheet) {
     setActiveSheet(sheet);
-    setError('');
+    setError("");
   }
 
   function handleBackFromSheet() {
@@ -96,15 +102,18 @@ export default function CheatSheets() {
   }
 
   async function handleDeleteSheet(sheetId) {
-    if (!window.confirm('Delete this cheat sheet? This cannot be undone.')) return;
+    if (!window.confirm("Delete this cheat sheet? This cannot be undone."))
+      return;
     setDeletingId(sheetId);
-    setError('');
+    setError("");
     try {
       await deleteCheatSheet(sheetId);
-      setLibrarySheets((prev) => (prev ? prev.filter((s) => s.id !== sheetId) : prev));
+      setLibrarySheets((prev) =>
+        prev ? prev.filter((s) => s.id !== sheetId) : prev,
+      );
       if (activeSheet?.id === sheetId) setActiveSheet(null);
     } catch {
-      setError('Could not delete that cheat sheet. Try again.');
+      setError("Could not delete that cheat sheet. Try again.");
     } finally {
       setDeletingId(null);
     }
@@ -122,14 +131,22 @@ export default function CheatSheets() {
           <div className={styles.tabs}>
             <button
               type="button"
-              className={view === 'generate' ? `${styles.tab} ${styles.tabActive}` : styles.tab}
+              className={
+                view === "generate"
+                  ? `${styles.tab} ${styles.tabActive}`
+                  : styles.tab
+              }
               onClick={switchToGenerate}
             >
               Generate
             </button>
             <button
               type="button"
-              className={view === 'library' ? `${styles.tab} ${styles.tabActive}` : styles.tab}
+              className={
+                view === "library"
+                  ? `${styles.tab} ${styles.tabActive}`
+                  : styles.tab
+              }
               onClick={switchToLibrary}
             >
               My cheat sheets
@@ -139,7 +156,7 @@ export default function CheatSheets() {
 
         {error && <div className={styles.error}>{error}</div>}
 
-        {!activeSheet && view === 'generate' && (
+        {!activeSheet && view === "generate" && (
           <>
             {!docsLoading && documents.length > 0 && (
               <div className={styles.generatePanel}>
@@ -167,7 +184,7 @@ export default function CheatSheets() {
                   onClick={handleGenerate}
                   disabled={generating}
                 >
-                  {generating ? 'Generating…' : 'Generate cheat sheet'}
+                  {generating ? "Generating…" : "Generate cheat sheet"}
                 </button>
               </div>
             )}
@@ -185,52 +202,64 @@ export default function CheatSheets() {
           </>
         )}
 
-        {!activeSheet && view === 'library' && (
+        {!activeSheet && view === "library" && (
           <>
             {libraryLoading && <div className={styles.skeletonBlock} />}
 
-            {!libraryLoading && librarySheets !== null && librarySheets.length === 0 && (
-              <div className={styles.empty}>
-                <p className={styles.emptyTitle}>No cheat sheets yet</p>
-                <p className={styles.emptyDetail}>Switch to Generate to create your first one.</p>
-              </div>
-            )}
+            {!libraryLoading &&
+              librarySheets !== null &&
+              librarySheets.length === 0 && (
+                <div className={styles.empty}>
+                  <p className={styles.emptyTitle}>No cheat sheets yet</p>
+                  <p className={styles.emptyDetail}>
+                    Switch to Generate to create your first one.
+                  </p>
+                </div>
+              )}
 
-            {!libraryLoading && librarySheets !== null && librarySheets.length > 0 && (
-              <div className={styles.sheetList}>
-                {librarySheets.map((sheet, index) => (
-                  <div
-                    key={sheet.id}
-                    className={styles.sheetRow}
-                    style={{ animationDelay: `${index * 40}ms` }}
-                  >
-                    <button
-                      type="button"
-                      className={styles.sheetRowMain}
-                      onClick={() => handleOpenSheet(sheet)}
+            {!libraryLoading &&
+              librarySheets !== null &&
+              librarySheets.length > 0 && (
+                <div className={styles.sheetList}>
+                  {librarySheets.map((sheet, index) => (
+                    <div
+                      key={sheet.id}
+                      className={styles.sheetRow}
+                      style={{ animationDelay: `${index * 40}ms` }}
                     >
-                      <span className={styles.sheetTitleText}>{sheet.title}</span>
-                      <span className={styles.sheetMeta}>{sheet.topic}</span>
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.deleteButton}
-                      onClick={() => handleDeleteSheet(sheet.id)}
-                      disabled={deletingId === sheet.id}
-                    >
-                      {deletingId === sheet.id ? 'Deleting…' : 'Delete'}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
+                      <button
+                        type="button"
+                        className={styles.sheetRowMain}
+                        onClick={() => handleOpenSheet(sheet)}
+                      >
+                        <span className={styles.sheetTitleText}>
+                          {sheet.title}
+                        </span>
+                        <span className={styles.sheetMeta}>{sheet.topic}</span>
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.deleteButton}
+                        onClick={() => handleDeleteSheet(sheet.id)}
+                        disabled={deletingId === sheet.id}
+                      >
+                        {deletingId === sheet.id ? "Deleting…" : "Delete"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
           </>
         )}
 
         {activeSheet && (
           <div className={styles.sheetPanel}>
             <div className={styles.sheetPanelHeader}>
-              <button type="button" className={styles.backButton} onClick={handleBackFromSheet}>
+              <button
+                type="button"
+                className={styles.backButton}
+                onClick={handleBackFromSheet}
+              >
                 ← Back
               </button>
               <div>

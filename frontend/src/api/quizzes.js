@@ -1,7 +1,7 @@
-import api from '../client';
+import api from "../client";
 
 export async function generateQuiz(documentIds, difficulty, count) {
-  const { data } = await api.post('/quizzes/', {
+  const { data } = await api.post("/quizzes/", {
     document_ids: documentIds,
     difficulty,
     count,
@@ -10,7 +10,7 @@ export async function generateQuiz(documentIds, difficulty, count) {
 }
 
 export async function getQuizzes() {
-  const { data } = await api.get('/quizzes/');
+  const { data } = await api.get("/quizzes/");
   return data;
 }
 

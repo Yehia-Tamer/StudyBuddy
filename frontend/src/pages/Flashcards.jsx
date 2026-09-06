@@ -1,10 +1,16 @@
-import { useEffect, useState } from 'react';
-import AppShell from '../components/layout/AppShell';
-import { getFlashcards, generateFlashcards, answerFlashcard, deleteFlashCard } from '../api/flashcards';import { getDocuments } from '../api/documents';
-import styles from './Flashcards.module.css';
+import { useEffect, useState } from "react";
+import AppShell from "../components/layout/AppShell";
+import {
+  getFlashcards,
+  generateFlashcards,
+  answerFlashcard,
+  deleteFlashCard,
+} from "../api/flashcards";
+import { getDocuments } from "../api/documents";
+import styles from "./Flashcards.module.css";
 
 export default function Flashcards() {
-  const [view, setView] = useState('generate'); // 'generate' | 'library'
+  const [view, setView] = useState("generate"); // 'generate' | 'library'
 
   const [documents, setDocuments] = useState([]);
   const [docsLoading, setDocsLoading] = useState(true);
@@ -17,7 +23,7 @@ export default function Flashcards() {
   const [libraryCards, setLibraryCards] = useState(null); // null = not fetched yet
   const [libraryLoading, setLibraryLoading] = useState(false);
 
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [answers, setAnswers] = useState({}); // { [flashcardId]: { value, submitting, result } }
 
   useEffect(() => {
@@ -28,7 +34,7 @@ export default function Flashcards() {
         const data = await getDocuments();
         if (!cancelled) setDocuments(data);
       } catch {
-        if (!cancelled) setError('Could not load your documents.');
+        if (!cancelled) setError("Could not load your documents.");
       } finally {
         if (!cancelled) setDocsLoading(false);
       }
@@ -41,35 +47,37 @@ export default function Flashcards() {
 
   async function loadLibrary() {
     setLibraryLoading(true);
-    setError('');
+    setError("");
     try {
       const data = await getFlashcards();
       setLibraryCards(data);
     } catch {
-      setError('Could not load your flashcard library.');
+      setError("Could not load your flashcard library.");
     } finally {
       setLibraryLoading(false);
     }
   }
 
   function switchToLibrary() {
-    setView('library');
+    setView("library");
     if (libraryCards === null) loadLibrary();
   }
 
   function toggleDoc(docId) {
     setSelectedDocIds((prev) =>
-      prev.includes(docId) ? prev.filter((id) => id !== docId) : [...prev, docId]
+      prev.includes(docId)
+        ? prev.filter((id) => id !== docId)
+        : [...prev, docId],
     );
   }
 
   async function handleGenerate() {
     if (selectedDocIds.length === 0) {
-      setError('Pick at least one document first.');
+      setError("Pick at least one document first.");
       return;
     }
     setGenerating(true);
-    setError('');
+    setError("");
     try {
       const created = await generateFlashcards(selectedDocIds, count);
       setSessionCards(created);
@@ -77,7 +85,7 @@ export default function Flashcards() {
       // keep the library cache in sync so switching tabs shows the new cards too
       setLibraryCards((prev) => (prev === null ? null : [...created, ...prev]));
     } catch {
-      setError('Could not generate flashcards from those documents.');
+      setError("Could not generate flashcards from those documents.");
     } finally {
       setGenerating(false);
     }
@@ -94,10 +102,16 @@ export default function Flashcards() {
     const value = answers[cardId]?.value?.trim();
     if (!value) return;
 
-    setAnswers((prev) => ({ ...prev, [cardId]: { ...prev[cardId], submitting: true } }));
+    setAnswers((prev) => ({
+      ...prev,
+      [cardId]: { ...prev[cardId], submitting: true },
+    }));
     try {
       const result = await answerFlashcard(cardId, value);
-      setAnswers((prev) => ({ ...prev, [cardId]: { value, submitting: false, result } }));
+      setAnswers((prev) => ({
+        ...prev,
+        [cardId]: { value, submitting: false, result },
+      }));
     } catch {
       setAnswers((prev) => ({
         ...prev,
@@ -107,20 +121,25 @@ export default function Flashcards() {
   }
 
   async function handleDeleteCard(cardId) {
-  if (!window.confirm('Delete this flashcard? This cannot be undone.')) return;
+    if (!window.confirm("Delete this flashcard? This cannot be undone."))
+      return;
 
-  setDeletingId(cardId);
-  setError('');
-  try {
-    await deleteFlashCard(cardId);
-    setSessionCards((prev) => (prev ? prev.filter((c) => c.id !== cardId) : prev));
-    setLibraryCards((prev) => (prev ? prev.filter((c) => c.id !== cardId) : prev));
-  } catch {
-    setError('Could not delete that flashcard. Try again.');
-  } finally {
-    setDeletingId(null);
+    setDeletingId(cardId);
+    setError("");
+    try {
+      await deleteFlashCard(cardId);
+      setSessionCards((prev) =>
+        prev ? prev.filter((c) => c.id !== cardId) : prev,
+      );
+      setLibraryCards((prev) =>
+        prev ? prev.filter((c) => c.id !== cardId) : prev,
+      );
+    } catch {
+      setError("Could not delete that flashcard. Try again.");
+    } finally {
+      setDeletingId(null);
+    }
   }
-}
 
   function renderCard(card, index) {
     const answerState = answers[card.id] || {};
@@ -139,7 +158,7 @@ export default function Flashcards() {
             onClick={() => handleDeleteCard(card.id)}
             disabled={deletingId === card.id}
           >
-          {deletingId === card.id ? 'Deleting…' : 'Delete'}
+            {deletingId === card.id ? "Deleting…" : "Delete"}
           </button>
         </div>
         <p className={styles.question}>{card.question}</p>
@@ -148,7 +167,7 @@ export default function Flashcards() {
           className={styles.answerInput}
           type="text"
           placeholder="Your answer"
-          value={answerState.value || ''}
+          value={answerState.value || ""}
           onChange={(e) => updateAnswerValue(card.id, e.target.value)}
           disabled={answerState.submitting}
         />
@@ -158,7 +177,7 @@ export default function Flashcards() {
           onClick={() => handleCheckAnswer(card.id)}
           disabled={answerState.submitting || !answerState.value?.trim()}
         >
-          {answerState.submitting ? 'Checking…' : 'Check answer'}
+          {answerState.submitting ? "Checking…" : "Check answer"}
         </button>
 
         {answerState.result && !answerState.result.error && (
@@ -170,9 +189,11 @@ export default function Flashcards() {
             }
           >
             <p className={styles.feedbackVerdict}>
-              {answerState.result.correct ? 'Correct' : 'Not quite'}
+              {answerState.result.correct ? "Correct" : "Not quite"}
             </p>
-            <p className={styles.feedbackDetail}>{answerState.result.feedback}</p>
+            <p className={styles.feedbackDetail}>
+              {answerState.result.feedback}
+            </p>
             {!answerState.result.correct && (
               <p className={styles.correctAnswer}>
                 Correct answer: {answerState.result.correct_answer}
@@ -182,7 +203,9 @@ export default function Flashcards() {
         )}
 
         {answerState.result?.error && (
-          <p className={styles.feedbackDetail}>Could not grade that answer. Try again.</p>
+          <p className={styles.feedbackDetail}>
+            Could not grade that answer. Try again.
+          </p>
         )}
       </article>
     );
@@ -199,14 +222,22 @@ export default function Flashcards() {
         <div className={styles.tabs}>
           <button
             type="button"
-            className={view === 'generate' ? `${styles.tab} ${styles.tabActive}` : styles.tab}
-            onClick={() => setView('generate')}
+            className={
+              view === "generate"
+                ? `${styles.tab} ${styles.tabActive}`
+                : styles.tab
+            }
+            onClick={() => setView("generate")}
           >
             Generate
           </button>
           <button
             type="button"
-            className={view === 'library' ? `${styles.tab} ${styles.tabActive}` : styles.tab}
+            className={
+              view === "library"
+                ? `${styles.tab} ${styles.tabActive}`
+                : styles.tab
+            }
             onClick={switchToLibrary}
           >
             My flashcards
@@ -215,7 +246,7 @@ export default function Flashcards() {
 
         {error && <div className={styles.error}>{error}</div>}
 
-        {view === 'generate' && (
+        {view === "generate" && (
           <>
             {!docsLoading && documents.length > 0 && (
               <div className={styles.generatePanel}>
@@ -254,7 +285,7 @@ export default function Flashcards() {
                     onClick={handleGenerate}
                     disabled={generating}
                   >
-                    {generating ? 'Generating…' : 'Generate flashcards'}
+                    {generating ? "Generating…" : "Generate flashcards"}
                   </button>
                 </div>
               </div>
@@ -286,18 +317,20 @@ export default function Flashcards() {
               </div>
             )}
 
-            {!generating && sessionCards !== null && sessionCards.length > 0 && (
-              <>
-                <p className={styles.sessionLabel}>Just generated</p>
-                <div className={styles.grid}>
-                  {sessionCards.map((card, index) => renderCard(card, index))}
-                </div>
-              </>
-            )}
+            {!generating &&
+              sessionCards !== null &&
+              sessionCards.length > 0 && (
+                <>
+                  <p className={styles.sessionLabel}>Just generated</p>
+                  <div className={styles.grid}>
+                    {sessionCards.map((card, index) => renderCard(card, index))}
+                  </div>
+                </>
+              )}
           </>
         )}
 
-        {view === 'library' && (
+        {view === "library" && (
           <>
             {libraryLoading && (
               <div className={styles.grid}>
@@ -307,18 +340,24 @@ export default function Flashcards() {
               </div>
             )}
 
-            {!libraryLoading && libraryCards !== null && libraryCards.length === 0 && (
-              <div className={styles.empty}>
-                <p className={styles.emptyTitle}>No flashcards yet</p>
-                <p className={styles.emptyDetail}>Switch to Generate to create your first set.</p>
-              </div>
-            )}
+            {!libraryLoading &&
+              libraryCards !== null &&
+              libraryCards.length === 0 && (
+                <div className={styles.empty}>
+                  <p className={styles.emptyTitle}>No flashcards yet</p>
+                  <p className={styles.emptyDetail}>
+                    Switch to Generate to create your first set.
+                  </p>
+                </div>
+              )}
 
-            {!libraryLoading && libraryCards !== null && libraryCards.length > 0 && (
-              <div className={styles.grid}>
-                {libraryCards.map((card, index) => renderCard(card, index))}
-              </div>
-            )}
+            {!libraryLoading &&
+              libraryCards !== null &&
+              libraryCards.length > 0 && (
+                <div className={styles.grid}>
+                  {libraryCards.map((card, index) => renderCard(card, index))}
+                </div>
+              )}
           </>
         )}
       </div>

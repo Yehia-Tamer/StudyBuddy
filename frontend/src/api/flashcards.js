@@ -1,12 +1,12 @@
-import api from '../client';
+import api from "../client";
 
 export async function getFlashcards() {
-  const { data } = await api.get('/flashcards/');
+  const { data } = await api.get("/flashcards/");
   return data;
 }
 
 export async function generateFlashcards(documentIds, count) {
-  const { data } = await api.post('/flashcards/', {
+  const { data } = await api.post("/flashcards/", {
     document_ids: documentIds,
     count,
   });

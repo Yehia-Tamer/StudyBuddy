@@ -1,32 +1,31 @@
-
-import { useEffect, useRef, useState } from 'react';
-import AppShell from '../components/layout/AppShell';
-import { getDocuments } from '../api/documents';
+import { useEffect, useRef, useState } from "react";
+import AppShell from "../components/layout/AppShell";
+import { getDocuments } from "../api/documents";
 import {
   createConversation,
   deleteConversation,
   getConversations,
   getMessages,
   sendMessage,
-} from '../api/chat';
-import styles from './Chat.module.css';
-import Markdown from '../components/Markdown';
+} from "../api/chat";
+import styles from "./Chat.module.css";
+import Markdown from "../components/Markdown";
 
-const CONVO_STORAGE_KEY = 'chat_conversation_id';
-const DOC_STORAGE_KEY = 'chat_document_id';
+const CONVO_STORAGE_KEY = "chat_conversation_id";
+const DOC_STORAGE_KEY = "chat_document_id";
 
 function sourceLabel(source) {
   switch (source.source_type) {
-    case 'pdf':
-      return `📄 ${source.filename || 'PDF'}${source.page ? ` — p. ${source.page}` : ''}`;
-    case 'pptx':
+    case "pdf":
+      return `📄 ${source.filename || "PDF"}${source.page ? ` — p. ${source.page}` : ""}`;
+    case "pptx":
       return `🖥️ Slide ${source.slide}`;
-    case 'youtube':
+    case "youtube":
       return `▶️ YouTube @ ${source.timestamp_delay}`;
-    case 'audio':
-      return `🎧 ${source.filename || 'Audio'} @ ${source.timestamp_delay}`;
-    case 'web':
-      return '🔗 Web source';
+    case "audio":
+      return `🎧 ${source.filename || "Audio"} @ ${source.timestamp_delay}`;
+    case "web":
+      return "🔗 Web source";
     default:
       return source.source_type;
   }
@@ -37,24 +36,27 @@ function sourceHref(source) {
 }
 
 function conversationTitle(convo, documents) {
-  if (!convo.document_id) return 'General chat';
-  return documents.find((d) => d.id === convo.document_id)?.filename || 'Document chat';
+  if (!convo.document_id) return "General chat";
+  return (
+    documents.find((d) => d.id === convo.document_id)?.filename ||
+    "Document chat"
+  );
 }
 
 export default function Chat() {
   const [documents, setDocuments] = useState([]);
   const [docsLoading, setDocsLoading] = useState(true);
 
-  const [view, setView] = useState('generate'); // 'generate' | 'list'
+  const [view, setView] = useState("generate"); // 'generate' | 'list'
 
   const [conversation, setConversation] = useState(null);
   const [selectedDocId, setSelectedDocId] = useState(null); // used only before a chat starts
   const [restoring, setRestoring] = useState(true);
 
   const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const [conversationList, setConversationList] = useState(null); // null = not fetched yet
   const [listLoading, setListLoading] = useState(false);
@@ -78,7 +80,7 @@ export default function Chat() {
         const data = await getDocuments();
         if (!cancelled) setDocuments(data);
       } catch {
-        if (!cancelled) setError('Could not load your documents.');
+        if (!cancelled) setError("Could not load your documents.");
       } finally {
         if (!cancelled) setDocsLoading(false);
       }
@@ -92,14 +94,14 @@ export default function Chat() {
   }, []);
 
   useEffect(() => {
-  if (!sending) {
-    setSendElapsed(0);
-    return;
-  }
-  const interval = setInterval(() => {
-    setSendElapsed((prev) => prev + 1);
-  }, 1000);
-  return () => clearInterval(interval);
+    if (!sending) {
+      setSendElapsed(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      setSendElapsed((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(interval);
   }, [sending]);
 
   // Try to restore a conversation from a previous visit
@@ -143,25 +145,25 @@ export default function Chat() {
 
   // Auto-scroll on new messages / typing indicator
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, sending]);
 
   async function loadConversationList() {
     setListLoading(true);
-    setError('');
+    setError("");
 
     try {
       const data = await getConversations();
       setConversationList(data);
     } catch {
-      setError('Could not load your chat history.');
+      setError("Could not load your chat history.");
     } finally {
       setListLoading(false);
     }
   }
 
   function switchToList() {
-    setView('list');
+    setView("list");
 
     if (conversationList === null) {
       loadConversationList();
@@ -169,11 +171,11 @@ export default function Chat() {
   }
 
   function switchToGenerate() {
-    setView('generate');
+    setView("generate");
   }
 
   async function handleStartChat() {
-    setError('');
+    setError("");
 
     try {
       const docId = selectedDocId || null;
@@ -193,7 +195,7 @@ export default function Chat() {
       // keep "My chats" in sync if it's already been loaded this visit
       setConversationList((prev) => (prev ? [convo, ...prev] : prev));
     } catch {
-      setError('Could not start a new chat. Try again.');
+      setError("Could not start a new chat. Try again.");
     }
   }
 
@@ -206,11 +208,11 @@ export default function Chat() {
     setConversation(null);
     setMessages([]);
     setSelectedDocId(null);
-    setError('');
+    setError("");
   }
 
   async function handleOpenConversation(convo) {
-    setError('');
+    setError("");
     setOpeningId(convo.id);
 
     try {
@@ -227,23 +229,23 @@ export default function Chat() {
         localStorage.removeItem(DOC_STORAGE_KEY);
       }
     } catch {
-      setError('Could not open that chat.');
+      setError("Could not open that chat.");
     } finally {
       setOpeningId(null);
     }
   }
 
   async function handleDeleteConversation(convoId) {
-    if (!window.confirm('Delete this chat? This cannot be undone.')) return;
+    if (!window.confirm("Delete this chat? This cannot be undone.")) return;
 
     setDeletingConvoId(convoId);
-    setError('');
+    setError("");
 
     try {
       await deleteConversation(convoId);
 
       setConversationList((prev) =>
-        prev ? prev.filter((c) => c.id !== convoId) : prev
+        prev ? prev.filter((c) => c.id !== convoId) : prev,
       );
 
       if (conversation?.id === convoId) {
@@ -253,7 +255,7 @@ export default function Chat() {
         setMessages([]);
       }
     } catch {
-      setError('Could not delete that chat. Try again.');
+      setError("Could not delete that chat. Try again.");
     } finally {
       setDeletingConvoId(null);
     }
@@ -268,49 +270,57 @@ export default function Chat() {
 
     const optimisticUserMessage = {
       id: `temp-${Date.now()}`,
-      role: 'user',
+      role: "user",
       content,
       timestamp: new Date().toISOString(),
       sources: [],
     };
 
     setMessages((prev) => [...prev, optimisticUserMessage]);
-    setInput('');
+    setInput("");
 
     if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = "auto";
     }
 
     setSending(true);
-setError('');
+    setError("");
 
-const controller = new AbortController();
-abortControllerRef.current = controller;
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
 
-try {
-  const assistantMessage = await sendMessage(conversation.id, content, controller.signal);
-  setMessages((prev) => [...prev, assistantMessage]);
-} catch (err) {
-  if (err?.code === 'ERR_CANCELED' || err?.name === 'CanceledError') {
-    setError('Cancelled. Note: the assistant may still finish generating on the server even though you stopped waiting for it.');
-  } else {
-    setError('The assistant could not respond. Your message was sent — try asking again.');
-  }
-} finally {
-  setSending(false);
-  abortControllerRef.current = null;
-}
+    try {
+      const assistantMessage = await sendMessage(
+        conversation.id,
+        content,
+        controller.signal,
+      );
+      setMessages((prev) => [...prev, assistantMessage]);
+    } catch (err) {
+      if (err?.code === "ERR_CANCELED" || err?.name === "CanceledError") {
+        setError(
+          "Cancelled. Note: the assistant may still finish generating on the server even though you stopped waiting for it.",
+        );
+      } else {
+        setError(
+          "The assistant could not respond. Your message was sent — try asking again.",
+        );
+      }
+    } finally {
+      setSending(false);
+      abortControllerRef.current = null;
+    }
   }
 
   function handleKeyDown(e) {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend(e);
     }
   }
 
   function handleCancelSend() {
-  abortControllerRef.current?.abort();
+    abortControllerRef.current?.abort();
   }
 
   function handleInputChange(e) {
@@ -319,7 +329,7 @@ try {
     const el = textareaRef.current;
 
     if (el) {
-      el.style.height = 'auto';
+      el.style.height = "auto";
       el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
     }
   }
@@ -340,7 +350,7 @@ try {
             <button
               type="button"
               className={
-                view === 'generate'
+                view === "generate"
                   ? `${styles.tab} ${styles.tabActive}`
                   : styles.tab
               }
@@ -352,7 +362,7 @@ try {
             <button
               type="button"
               className={
-                view === 'list'
+                view === "list"
                   ? `${styles.tab} ${styles.tabActive}`
                   : styles.tab
               }
@@ -365,13 +375,14 @@ try {
 
         {error && <div className={styles.error}>{error}</div>}
 
-        {!conversation && view === 'generate' && (
+        {!conversation && view === "generate" && (
           <div className={styles.setup}>
             <p className={styles.eyebrow}>Ask your material</p>
             <h1 className={styles.title}>Chat</h1>
 
             <p className={styles.setupHint}>
-              Chat about one document, or start a general chat across everything you've uploaded.
+              Chat about one document, or start a general chat across everything
+              you've uploaded.
             </p>
 
             {!docsLoading && (
@@ -415,7 +426,7 @@ try {
           </div>
         )}
 
-        {!conversation && view === 'list' && (
+        {!conversation && view === "list" && (
           <div className={styles.convoList}>
             {listLoading && (
               <>
@@ -440,10 +451,7 @@ try {
               conversationList !== null &&
               conversationList
                 .slice()
-                .sort(
-                  (a, b) =>
-                    new Date(b.created_at) - new Date(a.created_at)
-                )
+                .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
                 .map((convo, index) => (
                   <div
                     key={convo.id}
@@ -462,14 +470,14 @@ try {
 
                       <span className={styles.convoDate}>
                         {openingId === convo.id
-                          ? 'Opening…'
+                          ? "Opening…"
                           : new Date(convo.created_at).toLocaleDateString(
                               undefined,
                               {
-                                month: 'short',
-                                day: 'numeric',
-                                year: 'numeric',
-                              }
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                              },
                             )}
                       </span>
                     </button>
@@ -480,7 +488,7 @@ try {
                       onClick={() => handleDeleteConversation(convo.id)}
                       disabled={deletingConvoId === convo.id}
                     >
-                      {deletingConvoId === convo.id ? 'Deleting…' : 'Delete'}
+                      {deletingConvoId === convo.id ? "Deleting…" : "Delete"}
                     </button>
                   </div>
                 ))}
@@ -511,7 +519,8 @@ try {
                   <p className={styles.emptyTitle}>Ask anything</p>
 
                   <p className={styles.emptyDetail}>
-                    Ask a question about your material and I'll answer using it directly.
+                    Ask a question about your material and I'll answer using it
+                    directly.
                   </p>
                 </div>
               )}
@@ -520,18 +529,18 @@ try {
                 <div
                   key={message.id}
                   className={
-                    message.role === 'user'
+                    message.role === "user"
                       ? `${styles.message} ${styles.messageUser}`
                       : `${styles.message} ${styles.messageAssistant}`
                   }
                 >
-                  {message.role === 'assistant' && (
+                  {message.role === "assistant" && (
                     <div className={styles.avatar}>SB</div>
                   )}
 
                   <div className={styles.bubbleColumn}>
                     <div className={styles.bubble}>
-                      {message.role === 'assistant' ? (
+                      {message.role === "assistant" ? (
                         <Markdown content={message.content} />
                       ) : (
                         message.content
@@ -553,10 +562,7 @@ try {
                               {sourceLabel(source)}
                             </a>
                           ) : (
-                            <span
-                              key={i}
-                              className={styles.sourceChip}
-                            >
+                            <span key={i} className={styles.sourceChip}>
                               {sourceLabel(source)}
                             </span>
                           );
@@ -568,25 +574,31 @@ try {
               ))}
 
               {sending && (
-  <div className={`${styles.message} ${styles.messageAssistant}`}>
-    <div className={styles.avatar}>SB</div>
-    <div className={styles.bubbleColumn}>
-      <div className={`${styles.bubble} ${styles.typingBubble}`}>
-        <span className={styles.dot} />
-        <span className={styles.dot} />
-        <span className={styles.dot} />
-      </div>
-      <div className={styles.sendingRow}>
-        {sendElapsed >= 8 && (
-          <span className={styles.sendingHint}>Still thinking through your documents…</span>
-        )}
-        <button type="button" className={styles.cancelSendButton} onClick={handleCancelSend}>
-          Cancel
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+                <div className={`${styles.message} ${styles.messageAssistant}`}>
+                  <div className={styles.avatar}>SB</div>
+                  <div className={styles.bubbleColumn}>
+                    <div className={`${styles.bubble} ${styles.typingBubble}`}>
+                      <span className={styles.dot} />
+                      <span className={styles.dot} />
+                      <span className={styles.dot} />
+                    </div>
+                    <div className={styles.sendingRow}>
+                      {sendElapsed >= 8 && (
+                        <span className={styles.sendingHint}>
+                          Still thinking through your documents…
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        className={styles.cancelSendButton}
+                        onClick={handleCancelSend}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div ref={bottomRef} />
             </div>
@@ -607,7 +619,7 @@ try {
                 className={styles.sendButton}
                 disabled={sending || !input.trim()}
               >
-                {sending ? '…' : 'Send'}
+                {sending ? "…" : "Send"}
               </button>
             </form>
           </div>

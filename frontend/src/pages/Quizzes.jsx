@@ -1,18 +1,23 @@
-import { useEffect, useState } from 'react';
-import AppShell from '../components/layout/AppShell';
-import { getDocuments } from '../api/documents';
-import { generateQuiz, getQuizzes, gradeQuiz, deleteQuiz } from '../api/quizzes';
-import styles from './Quizzes.module.css';
+import { useEffect, useState } from "react";
+import AppShell from "../components/layout/AppShell";
+import { getDocuments } from "../api/documents";
+import {
+  generateQuiz,
+  getQuizzes,
+  gradeQuiz,
+  deleteQuiz,
+} from "../api/quizzes";
+import styles from "./Quizzes.module.css";
 
-const DIFFICULTIES = ['easy', 'medium', 'hard'];
+const DIFFICULTIES = ["easy", "medium", "hard"];
 
 export default function Quizzes() {
-  const [view, setView] = useState('generate'); // 'generate' | 'library'
+  const [view, setView] = useState("generate"); // 'generate' | 'library'
 
   const [documents, setDocuments] = useState([]);
   const [docsLoading, setDocsLoading] = useState(true);
   const [selectedDocIds, setSelectedDocIds] = useState([]);
-  const [difficulty, setDifficulty] = useState('medium');
+  const [difficulty, setDifficulty] = useState("medium");
   const [count, setCount] = useState(10);
   const [generating, setGenerating] = useState(false);
 
@@ -25,7 +30,7 @@ export default function Quizzes() {
   const [submitting, setSubmitting] = useState(false);
   const [gradeResult, setGradeResult] = useState(null); // { score, total, results }
 
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -35,7 +40,7 @@ export default function Quizzes() {
         const data = await getDocuments();
         if (!cancelled) setDocuments(data);
       } catch {
-        if (!cancelled) setError('Could not load your documents.');
+        if (!cancelled) setError("Could not load your documents.");
       } finally {
         if (!cancelled) setDocsLoading(false);
       }
@@ -48,39 +53,41 @@ export default function Quizzes() {
 
   async function loadLibrary() {
     setLibraryLoading(true);
-    setError('');
+    setError("");
     try {
       const data = await getQuizzes();
       setLibraryQuizzes(data);
     } catch {
-      setError('Could not load your quiz library.');
+      setError("Could not load your quiz library.");
     } finally {
       setLibraryLoading(false);
     }
   }
 
   function switchToLibrary() {
-    setView('library');
+    setView("library");
     if (libraryQuizzes === null) loadLibrary();
   }
 
   function switchToGenerate() {
-    setView('generate');
+    setView("generate");
   }
 
   function toggleDoc(docId) {
     setSelectedDocIds((prev) =>
-      prev.includes(docId) ? prev.filter((id) => id !== docId) : [...prev, docId]
+      prev.includes(docId)
+        ? prev.filter((id) => id !== docId)
+        : [...prev, docId],
     );
   }
 
   async function handleGenerate() {
     if (selectedDocIds.length === 0) {
-      setError('Pick at least one document first.');
+      setError("Pick at least one document first.");
       return;
     }
     setGenerating(true);
-    setError('');
+    setError("");
     try {
       const quiz = await generateQuiz(selectedDocIds, difficulty, count);
       setActiveQuiz(quiz);
@@ -88,7 +95,7 @@ export default function Quizzes() {
       setGradeResult(null);
       setLibraryQuizzes((prev) => (prev === null ? null : [quiz, ...prev]));
     } catch {
-      setError('Could not generate a quiz from those documents.');
+      setError("Could not generate a quiz from those documents.");
     } finally {
       setGenerating(false);
     }
@@ -98,7 +105,7 @@ export default function Quizzes() {
     setActiveQuiz(quiz);
     setAnswers({});
     setGradeResult(null);
-    setError('');
+    setError("");
   }
 
   function handleBackFromQuiz() {
@@ -113,41 +120,44 @@ export default function Quizzes() {
 
   async function handleSubmitQuiz() {
     if (!activeQuiz) return;
-    const orderedAnswers = activeQuiz.questions.map((q) => answers[q.id] || '');
+    const orderedAnswers = activeQuiz.questions.map((q) => answers[q.id] || "");
 
     setSubmitting(true);
-    setError('');
+    setError("");
     try {
       const result = await gradeQuiz(activeQuiz.id, orderedAnswers);
       setGradeResult(result);
     } catch {
-      setError('Could not grade this quiz. Try again.');
+      setError("Could not grade this quiz. Try again.");
     } finally {
       setSubmitting(false);
     }
   }
 
   async function handleDeleteQuiz(quizId) {
-    if (!window.confirm('Delete this quiz? This cannot be undone.')) return;
+    if (!window.confirm("Delete this quiz? This cannot be undone.")) return;
     setDeletingId(quizId);
-    setError('');
+    setError("");
     try {
       await deleteQuiz(quizId);
-      setLibraryQuizzes((prev) => (prev ? prev.filter((q) => q.id !== quizId) : prev));
+      setLibraryQuizzes((prev) =>
+        prev ? prev.filter((q) => q.id !== quizId) : prev,
+      );
       if (activeQuiz?.id === quizId) {
         setActiveQuiz(null);
         setAnswers({});
         setGradeResult(null);
       }
     } catch {
-      setError('Could not delete that quiz. Try again.');
+      setError("Could not delete that quiz. Try again.");
     } finally {
       setDeletingId(null);
     }
   }
 
   const allAnswered =
-    activeQuiz && activeQuiz.questions.every((q) => (answers[q.id] || '').trim().length > 0);
+    activeQuiz &&
+    activeQuiz.questions.every((q) => (answers[q.id] || "").trim().length > 0);
 
   return (
     <AppShell>
@@ -161,14 +171,22 @@ export default function Quizzes() {
           <div className={styles.tabs}>
             <button
               type="button"
-              className={view === 'generate' ? `${styles.tab} ${styles.tabActive}` : styles.tab}
+              className={
+                view === "generate"
+                  ? `${styles.tab} ${styles.tabActive}`
+                  : styles.tab
+              }
               onClick={switchToGenerate}
             >
               Generate
             </button>
             <button
               type="button"
-              className={view === 'library' ? `${styles.tab} ${styles.tabActive}` : styles.tab}
+              className={
+                view === "library"
+                  ? `${styles.tab} ${styles.tabActive}`
+                  : styles.tab
+              }
               onClick={switchToLibrary}
             >
               My quizzes
@@ -178,7 +196,7 @@ export default function Quizzes() {
 
         {error && <div className={styles.error}>{error}</div>}
 
-        {!activeQuiz && view === 'generate' && (
+        {!activeQuiz && view === "generate" && (
           <>
             {!docsLoading && documents.length > 0 && (
               <div className={styles.generatePanel}>
@@ -236,7 +254,7 @@ export default function Quizzes() {
                     onClick={handleGenerate}
                     disabled={generating}
                   >
-                    {generating ? 'Generating…' : 'Generate quiz'}
+                    {generating ? "Generating…" : "Generate quiz"}
                   </button>
                 </div>
               </div>
@@ -255,62 +273,72 @@ export default function Quizzes() {
           </>
         )}
 
-        {!activeQuiz && view === 'library' && (
+        {!activeQuiz && view === "library" && (
           <>
             {libraryLoading && <div className={styles.skeletonBlock} />}
 
-            {!libraryLoading && libraryQuizzes !== null && libraryQuizzes.length === 0 && (
-              <div className={styles.empty}>
-                <p className={styles.emptyTitle}>No quizzes yet</p>
-                <p className={styles.emptyDetail}>Switch to Generate to create your first one.</p>
-              </div>
-            )}
+            {!libraryLoading &&
+              libraryQuizzes !== null &&
+              libraryQuizzes.length === 0 && (
+                <div className={styles.empty}>
+                  <p className={styles.emptyTitle}>No quizzes yet</p>
+                  <p className={styles.emptyDetail}>
+                    Switch to Generate to create your first one.
+                  </p>
+                </div>
+              )}
 
-            {!libraryLoading && libraryQuizzes !== null && libraryQuizzes.length > 0 && (
-              <div className={styles.quizList}>
-                {libraryQuizzes.map((quiz, index) => (
-                  <div
-                    key={quiz.id}
-                    className={styles.quizRow}
-                    style={{ animationDelay: `${index * 40}ms` }}
-                  >
-                    <button
-                      type="button"
-                      className={styles.quizRowMain}
-                      onClick={() => handleOpenQuiz(quiz)}
+            {!libraryLoading &&
+              libraryQuizzes !== null &&
+              libraryQuizzes.length > 0 && (
+                <div className={styles.quizList}>
+                  {libraryQuizzes.map((quiz, index) => (
+                    <div
+                      key={quiz.id}
+                      className={styles.quizRow}
+                      style={{ animationDelay: `${index * 40}ms` }}
                     >
-                      <span className={styles.quizTopic}>{quiz.topic}</span>
-                      <span className={styles.quizMeta}>
-                        {quiz.difficulty} · {quiz.question_count} questions ·{' '}
-                        {quiz.time_estimate_minutes} min
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.deleteButton}
-                      onClick={() => handleDeleteQuiz(quiz.id)}
-                      disabled={deletingId === quiz.id}
-                    >
-                      {deletingId === quiz.id ? 'Deleting…' : 'Delete'}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
+                      <button
+                        type="button"
+                        className={styles.quizRowMain}
+                        onClick={() => handleOpenQuiz(quiz)}
+                      >
+                        <span className={styles.quizTopic}>{quiz.topic}</span>
+                        <span className={styles.quizMeta}>
+                          {quiz.difficulty} · {quiz.question_count} questions ·{" "}
+                          {quiz.time_estimate_minutes} min
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.deleteButton}
+                        onClick={() => handleDeleteQuiz(quiz.id)}
+                        disabled={deletingId === quiz.id}
+                      >
+                        {deletingId === quiz.id ? "Deleting…" : "Delete"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
           </>
         )}
 
         {activeQuiz && (
           <div className={styles.quizPanel}>
             <div className={styles.quizPanelHeader}>
-              <button type="button" className={styles.backButton} onClick={handleBackFromQuiz}>
+              <button
+                type="button"
+                className={styles.backButton}
+                onClick={handleBackFromQuiz}
+              >
                 ← Back
               </button>
               <div>
                 <h2 className={styles.quizPanelTitle}>{activeQuiz.topic}</h2>
                 <p className={styles.quizPanelMeta}>
-                  {activeQuiz.difficulty} · {activeQuiz.question_count} questions ·{' '}
-                  {activeQuiz.time_estimate_minutes} min
+                  {activeQuiz.difficulty} · {activeQuiz.question_count}{" "}
+                  questions · {activeQuiz.time_estimate_minutes} min
                 </p>
               </div>
             </div>
@@ -339,7 +367,7 @@ export default function Quizzes() {
                               : `${styles.verdict} ${styles.verdictIncorrect}`
                           }
                         >
-                          {result.correct ? 'Correct' : 'Not quite'}
+                          {result.correct ? "Correct" : "Not quite"}
                         </span>
                       )}
                     </div>
@@ -348,9 +376,9 @@ export default function Quizzes() {
                       {index + 1}. {question.question}
                     </p>
 
-                    {question.type === 'true_false' ? (
+                    {question.type === "true_false" ? (
                       <div className={styles.radioRow}>
-                        {['True', 'False'].map((option) => (
+                        {["True", "False"].map((option) => (
                           <label key={option} className={styles.radioOption}>
                             <input
                               type="radio"
@@ -369,15 +397,19 @@ export default function Quizzes() {
                         type="text"
                         className={styles.answerInput}
                         placeholder="Your answer"
-                        value={answers[question.id] || ''}
-                        onChange={(e) => updateAnswer(question.id, e.target.value)}
+                        value={answers[question.id] || ""}
+                        onChange={(e) =>
+                          updateAnswer(question.id, e.target.value)
+                        }
                         disabled={!!gradeResult}
                       />
                     )}
 
                     {result && (
                       <div className={styles.feedbackBlock}>
-                        <p className={styles.feedbackDetail}>{result.feedback}</p>
+                        <p className={styles.feedbackDetail}>
+                          {result.feedback}
+                        </p>
                         {!result.correct && (
                           <p className={styles.correctAnswer}>
                             Correct answer: {result.correct_answer}
@@ -397,7 +429,7 @@ export default function Quizzes() {
                 onClick={handleSubmitQuiz}
                 disabled={submitting || !allAnswered}
               >
-                {submitting ? 'Grading…' : 'Submit quiz'}
+                {submitting ? "Grading…" : "Submit quiz"}
               </button>
             )}
           </div>
