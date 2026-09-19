@@ -285,3 +285,14 @@
     transform: translateX(0);
   }
 }
+
+
+/* Localized keyframes so CSS-module animation refs resolve (Vite scopes animation-name) */
+@keyframes sb-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

@@ -497,3 +497,24 @@
   max-width: 380px;
   line-height: 1.55;
 }
+
+
+/* Localized keyframes so CSS-module animation refs resolve (Vite scopes animation-name) */
+@keyframes sb-rise-sm {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes sb-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
