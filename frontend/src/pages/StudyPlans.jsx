@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import AppShell from "../components/layout/AppShell";
-import { getDocuments } from "../api/documents";
+import PageHeader from "../components/PageHeader";
+import Icon from "../components/Icon";
 import {
   generateStudyPlan,
   getStudyPlans,
   deleteStudyPlan,
   updateItemCompletion,
 } from "../api/studyPlans";
+import { getDocuments } from "../api/documents";
 import styles from "./StudyPlans.module.css";
 
 function priorityClass(priority, styles) {
@@ -23,14 +25,14 @@ function priorityClass(priority, styles) {
 }
 
 export default function StudyPlans() {
-  const [view, setView] = useState("generate"); // 'generate' | 'library'
+  const [view, setView] = useState("generate");
 
   const [documents, setDocuments] = useState([]);
   const [docsLoading, setDocsLoading] = useState(true);
   const [selectedDocIds, setSelectedDocIds] = useState([]);
   const [generating, setGenerating] = useState(false);
 
-  const [libraryPlans, setLibraryPlans] = useState(null); // null = not fetched yet
+  const [libraryPlans, setLibraryPlans] = useState(null);
   const [libraryLoading, setLibraryLoading] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
 
@@ -167,13 +169,22 @@ export default function StudyPlans() {
     }
   }
 
+  const activeDone = activePlan
+    ? activePlan.items.filter((i) => i.completed).length
+    : 0;
+  const activeTotal = activePlan ? activePlan.items.length : 0;
+  const activePct = activeTotal
+    ? Math.round((activeDone / activeTotal) * 100)
+    : 0;
+
   return (
     <AppShell>
       <div className={styles.page}>
-        <header className={styles.header}>
-          <p className={styles.eyebrow}>Plan your study time</p>
-          <h1 className={styles.title}>Study Plans</h1>
-        </header>
+        <PageHeader
+          eyebrow="Plan your study time"
+          title="Study plans"
+          subtitle="Turn your documents into an ordered checklist of topics, priorities, and time estimates."
+        />
 
         {!activePlan && (
           <div className={styles.tabs}>
@@ -202,12 +213,17 @@ export default function StudyPlans() {
           </div>
         )}
 
-        {error && <div className={styles.error}>{error}</div>}
+        {error && (
+          <div className={styles.error}>
+            <Icon name="x" size={16} />
+            <span>{error}</span>
+          </div>
+        )}
 
         {!activePlan && view === "generate" && (
           <>
             {!docsLoading && documents.length > 0 && (
-              <div className={styles.generatePanel}>
+              <section className={styles.generatePanel}>
                 <p className={styles.generateLabel}>Generate from</p>
                 <div className={styles.docChips}>
                   {documents.map((doc) => (
@@ -221,27 +237,33 @@ export default function StudyPlans() {
                       }
                       onClick={() => toggleDoc(doc.id)}
                     >
+                      {selectedDocIds.includes(doc.id) && (
+                        <Icon name="check" size={14} />
+                      )}
                       {doc.filename}
                     </button>
                   ))}
                 </div>
-
                 <button
                   type="button"
                   className={styles.generateButton}
                   onClick={handleGenerate}
                   disabled={generating}
                 >
+                  <Icon name="sparkle" size={16} />
                   {generating ? "Generating…" : "Generate study plan"}
                 </button>
-              </div>
+              </section>
             )}
 
             {!docsLoading && documents.length === 0 && (
               <div className={styles.empty}>
+                <span className={styles.emptyIcon}>
+                  <Icon name="documents" size={24} />
+                </span>
                 <p className={styles.emptyTitle}>Upload a document first</p>
                 <p className={styles.emptyDetail}>
-                  Study plans are generated from documents you've uploaded.
+                  Study plans are generated from documents you have uploaded.
                 </p>
               </div>
             )}
@@ -258,6 +280,9 @@ export default function StudyPlans() {
               libraryPlans !== null &&
               libraryPlans.length === 0 && (
                 <div className={styles.empty}>
+                  <span className={styles.emptyIcon}>
+                    <Icon name="plans" size={24} />
+                  </span>
                   <p className={styles.emptyTitle}>No study plans yet</p>
                   <p className={styles.emptyDetail}>
                     Switch to Generate to create your first one.
@@ -268,42 +293,59 @@ export default function StudyPlans() {
             {!libraryLoading &&
               libraryPlans !== null &&
               libraryPlans.length > 0 && (
-                <div className={styles.planList}>
+                <div className={styles.list}>
                   {libraryPlans.map((plan, index) => {
                     const doneCount = plan.items.filter(
                       (i) => i.completed,
                     ).length;
+                    const total = plan.items.length;
+                    const pct = total
+                      ? Math.round((doneCount / total) * 100)
+                      : 0;
                     return (
                       <div
                         key={plan.id}
-                        className={styles.planRow}
-                        style={{ animationDelay: `${index * 40}ms` }}
+                        className={styles.row}
+                        style={{
+                          animationDelay: `${Math.min(index, 10) * 40}ms`,
+                        }}
                       >
                         <button
                           type="button"
-                          className={styles.planRowMain}
+                          className={styles.rowMain}
                           onClick={() => handleOpenPlan(plan)}
                         >
-                          <span className={styles.planTitle}>{plan.title}</span>
-                          <span className={styles.planMeta}>
-                            {doneCount} / {plan.items.length} completed ·{" "}
-                            {new Date(plan.created_at).toLocaleDateString(
-                              undefined,
-                              {
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                              },
-                            )}
+                          <span className={styles.rowIcon}>
+                            <Icon name="plans" size={18} />
                           </span>
+                          <span className={styles.rowText}>
+                            <span className={styles.rowTitle}>{plan.title}</span>
+                            <span className={styles.rowProgress}>
+                              <span className={styles.rowTrack}>
+                                <span
+                                  className={styles.rowFill}
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </span>
+                              <span className={`${styles.rowMeta} tnum`}>
+                                {doneCount}/{total} done
+                              </span>
+                            </span>
+                          </span>
+                          <Icon
+                            name="chevronRight"
+                            size={16}
+                            className={styles.rowChevron}
+                          />
                         </button>
                         <button
                           type="button"
-                          className={styles.deleteButton}
+                          className={styles.rowDelete}
                           onClick={() => handleDeletePlan(plan.id)}
                           disabled={deletingId === plan.id}
+                          aria-label="Delete study plan"
                         >
-                          {deletingId === plan.id ? "Deleting…" : "Delete"}
+                          <Icon name="trash" size={16} />
                         </button>
                       </div>
                     );
@@ -321,21 +363,37 @@ export default function StudyPlans() {
                 className={styles.backButton}
                 onClick={handleBackFromPlan}
               >
-                ← Back
+                <Icon name="arrowLeft" size={17} />
               </button>
-              <div>
+              <div className={styles.planPanelText}>
                 <h2 className={styles.planPanelTitle}>{activePlan.title}</h2>
-                <p className={styles.planPanelMeta}>
-                  {activePlan.items.filter((i) => i.completed).length} /{" "}
-                  {activePlan.items.length} completed
+                <p className={`${styles.planPanelMeta} tnum`}>
+                  {activeDone} of {activeTotal} completed
                 </p>
               </div>
+              <div className={styles.progressRing}>
+                <span className="tnum">{activePct}%</span>
+              </div>
+            </div>
+
+            <div className={styles.planTrack}>
+              <div
+                className={styles.planFill}
+                style={{ width: `${activePct}%` }}
+              />
             </div>
 
             <div className={styles.itemList}>
               {activePlan.items.map((item) => (
-                <div key={item.id} className={styles.itemCard}>
-                  <div className={styles.itemTopRow}>
+                <div
+                  key={item.id}
+                  className={
+                    item.completed
+                      ? `${styles.itemCard} ${styles.itemCardDone}`
+                      : styles.itemCard
+                  }
+                >
+                  <div className={styles.itemTop}>
                     <label className={styles.checkboxRow}>
                       <input
                         type="checkbox"
@@ -344,7 +402,11 @@ export default function StudyPlans() {
                         onChange={(e) =>
                           handleToggleItem(item.id, e.target.checked)
                         }
+                        className={styles.checkNative}
                       />
+                      <span className={styles.checkBox}>
+                        <Icon name="check" size={13} />
+                      </span>
                       <span
                         className={
                           item.completed
@@ -362,7 +424,10 @@ export default function StudyPlans() {
                     </span>
                   </div>
 
-                  <p className={styles.itemMeta}>{item.estimated_time} min</p>
+                  <p className={`${styles.itemMeta} tnum`}>
+                    <Icon name="clock" size={14} />
+                    {item.estimated_time} min
+                  </p>
 
                   {item.subtopics && item.subtopics.length > 0 && (
                     <ul className={styles.subtopicList}>

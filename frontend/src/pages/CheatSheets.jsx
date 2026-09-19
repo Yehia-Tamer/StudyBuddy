@@ -1,23 +1,25 @@
 import { useEffect, useState } from "react";
 import AppShell from "../components/layout/AppShell";
-import { getDocuments } from "../api/documents";
+import PageHeader from "../components/PageHeader";
+import Icon from "../components/Icon";
 import {
   generateCheatSheet,
   getCheatSheets,
   deleteCheatSheet,
 } from "../api/cheatSheets";
-import styles from "./CheatSheets.module.css";
 import Markdown from "../components/Markdown";
+import styles from "./CheatSheets.module.css";
+import { getDocuments } from "../api/documents";
 
 export default function CheatSheets() {
-  const [view, setView] = useState("generate"); // 'generate' | 'library'
+  const [view, setView] = useState("generate");
 
   const [documents, setDocuments] = useState([]);
   const [docsLoading, setDocsLoading] = useState(true);
   const [selectedDocIds, setSelectedDocIds] = useState([]);
   const [generating, setGenerating] = useState(false);
 
-  const [librarySheets, setLibrarySheets] = useState(null); // null = not fetched yet
+  const [librarySheets, setLibrarySheets] = useState(null);
   const [libraryLoading, setLibraryLoading] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
 
@@ -122,10 +124,11 @@ export default function CheatSheets() {
   return (
     <AppShell>
       <div className={styles.page}>
-        <header className={styles.header}>
-          <p className={styles.eyebrow}>One-page summaries</p>
-          <h1 className={styles.title}>Cheat Sheets</h1>
-        </header>
+        <PageHeader
+          eyebrow="One-page summaries"
+          title="Cheat sheets"
+          subtitle="Condense your material into a single dense reference you can scan before an exam."
+        />
 
         {!activeSheet && (
           <div className={styles.tabs}>
@@ -154,12 +157,17 @@ export default function CheatSheets() {
           </div>
         )}
 
-        {error && <div className={styles.error}>{error}</div>}
+        {error && (
+          <div className={styles.error}>
+            <Icon name="x" size={16} />
+            <span>{error}</span>
+          </div>
+        )}
 
         {!activeSheet && view === "generate" && (
           <>
             {!docsLoading && documents.length > 0 && (
-              <div className={styles.generatePanel}>
+              <section className={styles.generatePanel}>
                 <p className={styles.generateLabel}>Generate from</p>
                 <div className={styles.docChips}>
                   {documents.map((doc) => (
@@ -173,27 +181,33 @@ export default function CheatSheets() {
                       }
                       onClick={() => toggleDoc(doc.id)}
                     >
+                      {selectedDocIds.includes(doc.id) && (
+                        <Icon name="check" size={14} />
+                      )}
                       {doc.filename}
                     </button>
                   ))}
                 </div>
-
                 <button
                   type="button"
                   className={styles.generateButton}
                   onClick={handleGenerate}
                   disabled={generating}
                 >
+                  <Icon name="sparkle" size={16} />
                   {generating ? "Generating…" : "Generate cheat sheet"}
                 </button>
-              </div>
+              </section>
             )}
 
             {!docsLoading && documents.length === 0 && (
               <div className={styles.empty}>
+                <span className={styles.emptyIcon}>
+                  <Icon name="documents" size={24} />
+                </span>
                 <p className={styles.emptyTitle}>Upload a document first</p>
                 <p className={styles.emptyDetail}>
-                  Cheat sheets are generated from documents you've uploaded.
+                  Cheat sheets are generated from documents you have uploaded.
                 </p>
               </div>
             )}
@@ -210,6 +224,9 @@ export default function CheatSheets() {
               librarySheets !== null &&
               librarySheets.length === 0 && (
                 <div className={styles.empty}>
+                  <span className={styles.emptyIcon}>
+                    <Icon name="cheatsheet" size={24} />
+                  </span>
                   <p className={styles.emptyTitle}>No cheat sheets yet</p>
                   <p className={styles.emptyDetail}>
                     Switch to Generate to create your first one.
@@ -220,30 +237,39 @@ export default function CheatSheets() {
             {!libraryLoading &&
               librarySheets !== null &&
               librarySheets.length > 0 && (
-                <div className={styles.sheetList}>
+                <div className={styles.list}>
                   {librarySheets.map((sheet, index) => (
                     <div
                       key={sheet.id}
-                      className={styles.sheetRow}
-                      style={{ animationDelay: `${index * 40}ms` }}
+                      className={styles.row}
+                      style={{ animationDelay: `${Math.min(index, 10) * 40}ms` }}
                     >
                       <button
                         type="button"
-                        className={styles.sheetRowMain}
+                        className={styles.rowMain}
                         onClick={() => handleOpenSheet(sheet)}
                       >
-                        <span className={styles.sheetTitleText}>
-                          {sheet.title}
+                        <span className={styles.rowIcon}>
+                          <Icon name="cheatsheet" size={18} />
                         </span>
-                        <span className={styles.sheetMeta}>{sheet.topic}</span>
+                        <span className={styles.rowText}>
+                          <span className={styles.rowTitle}>{sheet.title}</span>
+                          <span className={styles.rowMeta}>{sheet.topic}</span>
+                        </span>
+                        <Icon
+                          name="chevronRight"
+                          size={16}
+                          className={styles.rowChevron}
+                        />
                       </button>
                       <button
                         type="button"
-                        className={styles.deleteButton}
+                        className={styles.rowDelete}
                         onClick={() => handleDeleteSheet(sheet.id)}
                         disabled={deletingId === sheet.id}
+                        aria-label="Delete cheat sheet"
                       >
-                        {deletingId === sheet.id ? "Deleting…" : "Delete"}
+                        <Icon name="trash" size={16} />
                       </button>
                     </div>
                   ))}
@@ -260,16 +286,16 @@ export default function CheatSheets() {
                 className={styles.backButton}
                 onClick={handleBackFromSheet}
               >
-                ← Back
+                <Icon name="arrowLeft" size={17} />
               </button>
-              <div>
+              <div className={styles.sheetPanelText}>
                 <h2 className={styles.sheetPanelTitle}>{activeSheet.title}</h2>
                 <p className={styles.sheetPanelMeta}>{activeSheet.topic}</p>
               </div>
             </div>
-            <div className={styles.sheetContent}>
+            <article className={styles.sheetContent}>
               <Markdown content={activeSheet.content} />
-            </div>
+            </article>
           </div>
         )}
       </div>

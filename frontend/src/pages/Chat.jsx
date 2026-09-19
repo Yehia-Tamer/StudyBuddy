@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import AppShell from "../components/layout/AppShell";
+import PageHeader from "../components/PageHeader";
+import Icon from "../components/Icon";
+import Markdown from "../components/Markdown";
 import { getDocuments } from "../api/documents";
 import {
   createConversation,
@@ -9,25 +12,30 @@ import {
   sendMessage,
 } from "../api/chat";
 import styles from "./Chat.module.css";
-import Markdown from "../components/Markdown";
 
 const CONVO_STORAGE_KEY = "chat_conversation_id";
 const DOC_STORAGE_KEY = "chat_document_id";
 
-function sourceLabel(source) {
+function sourceInfo(source) {
   switch (source.source_type) {
     case "pdf":
-      return `📄 ${source.filename || "PDF"}${source.page ? ` — p. ${source.page}` : ""}`;
+      return {
+        icon: "file",
+        text: `${source.filename || "PDF"}${source.page ? ` · p.${source.page}` : ""}`,
+      };
     case "pptx":
-      return `🖥️ Slide ${source.slide}`;
+      return { icon: "presentation", text: `Slide ${source.slide}` };
     case "youtube":
-      return `▶️ YouTube @ ${source.timestamp_delay}`;
+      return { icon: "video", text: `YouTube @ ${source.timestamp_delay}` };
     case "audio":
-      return `🎧 ${source.filename || "Audio"} @ ${source.timestamp_delay}`;
+      return {
+        icon: "audio",
+        text: `${source.filename || "Audio"} @ ${source.timestamp_delay}`,
+      };
     case "web":
-      return "🔗 Web source";
+      return { icon: "web", text: "Web source" };
     default:
-      return source.source_type;
+      return { icon: "file", text: source.source_type };
   }
 }
 
@@ -50,7 +58,7 @@ export default function Chat() {
   const [view, setView] = useState("generate"); // 'generate' | 'list'
 
   const [conversation, setConversation] = useState(null);
-  const [selectedDocId, setSelectedDocId] = useState(null); // used only before a chat starts
+  const [selectedDocId, setSelectedDocId] = useState(null);
   const [restoring, setRestoring] = useState(true);
 
   const [messages, setMessages] = useState([]);
@@ -58,7 +66,7 @@ export default function Chat() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
 
-  const [conversationList, setConversationList] = useState(null); // null = not fetched yet
+  const [conversationList, setConversationList] = useState(null);
   const [listLoading, setListLoading] = useState(false);
   const [openingId, setOpeningId] = useState(null);
   const [deletingConvoId, setDeletingConvoId] = useState(null);
@@ -69,13 +77,10 @@ export default function Chat() {
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
 
-  // Load documents for the picker + for labeling conversations by document
   useEffect(() => {
     let cancelled = false;
-
     async function loadDocs() {
       setDocsLoading(true);
-
       try {
         const data = await getDocuments();
         if (!cancelled) setDocuments(data);
@@ -85,9 +90,7 @@ export default function Chat() {
         if (!cancelled) setDocsLoading(false);
       }
     }
-
     loadDocs();
-
     return () => {
       cancelled = true;
     };
@@ -104,7 +107,6 @@ export default function Chat() {
     return () => clearInterval(interval);
   }, [sending]);
 
-  // Try to restore a conversation from a previous visit
   useEffect(() => {
     const storedId = localStorage.getItem(CONVO_STORAGE_KEY);
     const storedDocId = localStorage.getItem(DOC_STORAGE_KEY);
@@ -115,18 +117,14 @@ export default function Chat() {
     }
 
     let cancelled = false;
-
     async function restore() {
       try {
         const history = await getMessages(storedId);
-
         if (cancelled) return;
-
         setConversation({
           id: Number(storedId),
           document_id: storedDocId ? Number(storedDocId) : null,
         });
-
         setMessages(history);
       } catch {
         localStorage.removeItem(CONVO_STORAGE_KEY);
@@ -135,15 +133,12 @@ export default function Chat() {
         if (!cancelled) setRestoring(false);
       }
     }
-
     restore();
-
     return () => {
       cancelled = true;
     };
   }, []);
 
-  // Auto-scroll on new messages / typing indicator
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, sending]);
@@ -151,7 +146,6 @@ export default function Chat() {
   async function loadConversationList() {
     setListLoading(true);
     setError("");
-
     try {
       const data = await getConversations();
       setConversationList(data);
@@ -164,10 +158,7 @@ export default function Chat() {
 
   function switchToList() {
     setView("list");
-
-    if (conversationList === null) {
-      loadConversationList();
-    }
+    if (conversationList === null) loadConversationList();
   }
 
   function switchToGenerate() {
@@ -176,23 +167,17 @@ export default function Chat() {
 
   async function handleStartChat() {
     setError("");
-
     try {
       const docId = selectedDocId || null;
       const convo = await createConversation(docId);
-
       setConversation(convo);
       setMessages([]);
-
       localStorage.setItem(CONVO_STORAGE_KEY, convo.id);
-
       if (docId) {
         localStorage.setItem(DOC_STORAGE_KEY, docId);
       } else {
         localStorage.removeItem(DOC_STORAGE_KEY);
       }
-
-      // keep "My chats" in sync if it's already been loaded this visit
       setConversationList((prev) => (prev ? [convo, ...prev] : prev));
     } catch {
       setError("Could not start a new chat. Try again.");
@@ -200,11 +185,8 @@ export default function Chat() {
   }
 
   function handleBackFromChat() {
-    // Leaves the conversation view only — the chat itself is NOT deleted.
-    // Deleting a chat is only ever done explicitly from "My chats".
     localStorage.removeItem(CONVO_STORAGE_KEY);
     localStorage.removeItem(DOC_STORAGE_KEY);
-
     setConversation(null);
     setMessages([]);
     setSelectedDocId(null);
@@ -214,15 +196,11 @@ export default function Chat() {
   async function handleOpenConversation(convo) {
     setError("");
     setOpeningId(convo.id);
-
     try {
       const history = await getMessages(convo.id);
-
       setConversation(convo);
       setMessages(history);
-
       localStorage.setItem(CONVO_STORAGE_KEY, convo.id);
-
       if (convo.document_id) {
         localStorage.setItem(DOC_STORAGE_KEY, convo.document_id);
       } else {
@@ -237,17 +215,13 @@ export default function Chat() {
 
   async function handleDeleteConversation(convoId) {
     if (!window.confirm("Delete this chat? This cannot be undone.")) return;
-
     setDeletingConvoId(convoId);
     setError("");
-
     try {
       await deleteConversation(convoId);
-
       setConversationList((prev) =>
         prev ? prev.filter((c) => c.id !== convoId) : prev,
       );
-
       if (conversation?.id === convoId) {
         localStorage.removeItem(CONVO_STORAGE_KEY);
         localStorage.removeItem(DOC_STORAGE_KEY);
@@ -263,9 +237,7 @@ export default function Chat() {
 
   async function handleSend(e) {
     e.preventDefault();
-
     const content = input.trim();
-
     if (!content || sending || !conversation) return;
 
     const optimisticUserMessage = {
@@ -278,11 +250,9 @@ export default function Chat() {
 
     setMessages((prev) => [...prev, optimisticUserMessage]);
     setInput("");
-
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
     }
-
     setSending(true);
     setError("");
 
@@ -299,11 +269,11 @@ export default function Chat() {
     } catch (err) {
       if (err?.code === "ERR_CANCELED" || err?.name === "CanceledError") {
         setError(
-          "Cancelled. Note: the assistant may still finish generating on the server even though you stopped waiting for it.",
+          "Cancelled. The assistant may still finish generating on the server even though you stopped waiting for it.",
         );
       } else {
         setError(
-          "The assistant could not respond. Your message was sent — try asking again.",
+          "The assistant could not respond. Your message was sent, so try asking again.",
         );
       }
     } finally {
@@ -325,9 +295,7 @@ export default function Chat() {
 
   function handleInputChange(e) {
     setInput(e.target.value);
-
     const el = textareaRef.current;
-
     if (el) {
       el.style.height = "auto";
       el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
@@ -346,83 +314,99 @@ export default function Chat() {
     <AppShell>
       <div className={styles.page}>
         {!conversation && (
-          <div className={styles.tabs}>
-            <button
-              type="button"
-              className={
-                view === "generate"
-                  ? `${styles.tab} ${styles.tabActive}`
-                  : styles.tab
-              }
-              onClick={switchToGenerate}
-            >
-              Generate
-            </button>
-
-            <button
-              type="button"
-              className={
-                view === "list"
-                  ? `${styles.tab} ${styles.tabActive}`
-                  : styles.tab
-              }
-              onClick={switchToList}
-            >
-              My chats
-            </button>
+          <div className={styles.top}>
+            <PageHeader
+              eyebrow="Ask your material"
+              title="Chat"
+              subtitle="Ask questions and get answers pulled straight from your uploads, with citations."
+            />
+            <div className={styles.tabs}>
+              <button
+                type="button"
+                className={
+                  view === "generate"
+                    ? `${styles.tab} ${styles.tabActive}`
+                    : styles.tab
+                }
+                onClick={switchToGenerate}
+              >
+                New chat
+              </button>
+              <button
+                type="button"
+                className={
+                  view === "list"
+                    ? `${styles.tab} ${styles.tabActive}`
+                    : styles.tab
+                }
+                onClick={switchToList}
+              >
+                My chats
+              </button>
+            </div>
           </div>
         )}
 
-        {error && <div className={styles.error}>{error}</div>}
+        {error && (
+          <div className={styles.error}>
+            <Icon name="x" size={16} />
+            <span>{error}</span>
+          </div>
+        )}
 
         {!conversation && view === "generate" && (
           <div className={styles.setup}>
-            <p className={styles.eyebrow}>Ask your material</p>
-            <h1 className={styles.title}>Chat</h1>
+            <div className={styles.setupCard}>
+              <span className={styles.setupIcon}>
+                <Icon name="chat" size={22} />
+              </span>
+              <h2 className={styles.setupTitle}>Start a conversation</h2>
+              <p className={styles.setupHint}>
+                Focus on one document, or start a general chat across everything
+                you have uploaded.
+              </p>
 
-            <p className={styles.setupHint}>
-              Chat about one document, or start a general chat across everything
-              you've uploaded.
-            </p>
-
-            {!docsLoading && (
-              <div className={styles.docChips}>
-                <button
-                  type="button"
-                  className={
-                    selectedDocId === null
-                      ? `${styles.docChip} ${styles.docChipActive}`
-                      : styles.docChip
-                  }
-                  onClick={() => setSelectedDocId(null)}
-                >
-                  General (all context)
-                </button>
-
-                {documents.map((doc) => (
+              {!docsLoading && (
+                <div className={styles.docChips}>
                   <button
-                    key={doc.id}
                     type="button"
                     className={
-                      selectedDocId === doc.id
+                      selectedDocId === null
                         ? `${styles.docChip} ${styles.docChipActive}`
                         : styles.docChip
                     }
-                    onClick={() => setSelectedDocId(doc.id)}
+                    onClick={() => setSelectedDocId(null)}
                   >
-                    {doc.filename}
+                    <Icon name="layers" size={15} />
+                    General (all context)
                   </button>
-                ))}
-              </div>
-            )}
+                  {documents.map((doc) => (
+                    <button
+                      key={doc.id}
+                      type="button"
+                      className={
+                        selectedDocId === doc.id
+                          ? `${styles.docChip} ${styles.docChipActive}`
+                          : styles.docChip
+                      }
+                      onClick={() => setSelectedDocId(doc.id)}
+                    >
+                      <Icon name="file" size={15} />
+                      {doc.filename}
+                    </button>
+                  ))}
+                </div>
+              )}
 
-            <button
-              type="button"
-              className={styles.startButton}
-              onClick={handleStartChat}
-            >
-              Start chat
-            </button>
+              <button
+                type="button"
+                className={styles.startButton}
+                onClick={handleStartChat}
+              >
+                <Icon name="sparkle" size={17} />
+                Start chat
+              </button>
+            </div>
           </div>
         )}
 
@@ -440,9 +424,12 @@ export default function Chat() {
               conversationList !== null &&
               conversationList.length === 0 && (
                 <div className={styles.empty}>
+                  <span className={styles.emptyIcon}>
+                    <Icon name="chat" size={24} />
+                  </span>
                   <p className={styles.emptyTitle}>No chats yet</p>
                   <p className={styles.emptyDetail}>
-                    Start a chat and it'll show up here.
+                    Start a chat and it will show up here.
                   </p>
                 </div>
               )}
@@ -456,7 +443,7 @@ export default function Chat() {
                   <div
                     key={convo.id}
                     className={styles.convoRow}
-                    style={{ animationDelay: `${index * 40}ms` }}
+                    style={{ animationDelay: `${Math.min(index, 10) * 40}ms` }}
                   >
                     <button
                       type="button"
@@ -464,31 +451,36 @@ export default function Chat() {
                       onClick={() => handleOpenConversation(convo)}
                       disabled={openingId === convo.id}
                     >
-                      <span className={styles.convoTitle}>
-                        {conversationTitle(convo, documents)}
+                      <span className={styles.convoIcon}>
+                        <Icon name="chat" size={17} />
                       </span>
-
-                      <span className={styles.convoDate}>
-                        {openingId === convo.id
-                          ? "Opening…"
-                          : new Date(convo.created_at).toLocaleDateString(
-                              undefined,
-                              {
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                              },
-                            )}
+                      <span className={styles.convoText}>
+                        <span className={styles.convoTitle}>
+                          {conversationTitle(convo, documents)}
+                        </span>
+                        <span className={styles.convoDate}>
+                          {openingId === convo.id
+                            ? "Opening…"
+                            : new Date(convo.created_at).toLocaleDateString(
+                                undefined,
+                                { month: "short", day: "numeric", year: "numeric" },
+                              )}
+                        </span>
                       </span>
+                      <Icon
+                        name="chevronRight"
+                        size={16}
+                        className={styles.convoChevron}
+                      />
                     </button>
-
                     <button
                       type="button"
-                      className={styles.deleteButton}
+                      className={styles.rowDelete}
                       onClick={() => handleDeleteConversation(convo.id)}
                       disabled={deletingConvoId === convo.id}
+                      aria-label="Delete chat"
                     >
-                      {deletingConvoId === convo.id ? "Deleting…" : "Delete"}
+                      <Icon name="trash" size={16} />
                     </button>
                   </div>
                 ))}
@@ -498,17 +490,19 @@ export default function Chat() {
         {conversation && (
           <div className={styles.chatShell}>
             <div className={styles.chatHeader}>
-              <div className={styles.chatHeaderLeft}>
-                <button
-                  type="button"
-                  className={styles.backButton}
-                  onClick={handleBackFromChat}
-                >
-                  ← Back
-                </button>
-
+              <button
+                type="button"
+                className={styles.backButton}
+                onClick={handleBackFromChat}
+              >
+                <Icon name="arrowLeft" size={17} />
+              </button>
+              <div className={styles.chatHeaderText}>
                 <span className={styles.chatHeaderLabel}>
                   {conversationTitle(conversation, documents)}
+                </span>
+                <span className={styles.chatHeaderSub}>
+                  Grounded in your material
                 </span>
               </div>
             </div>
@@ -516,10 +510,12 @@ export default function Chat() {
             <div className={styles.messages}>
               {messages.length === 0 && (
                 <div className={styles.emptyThread}>
+                  <span className={styles.emptyIcon}>
+                    <Icon name="sparkle" size={24} />
+                  </span>
                   <p className={styles.emptyTitle}>Ask anything</p>
-
                   <p className={styles.emptyDetail}>
-                    Ask a question about your material and I'll answer using it
+                    Ask a question about your material and I will answer using it
                     directly.
                   </p>
                 </div>
@@ -535,7 +531,9 @@ export default function Chat() {
                   }
                 >
                   {message.role === "assistant" && (
-                    <div className={styles.avatar}>SB</div>
+                    <div className={styles.avatar}>
+                      <Icon name="sparkle" size={15} />
+                    </div>
                   )}
 
                   <div className={styles.bubbleColumn}>
@@ -549,8 +547,8 @@ export default function Chat() {
                     {message.sources && message.sources.length > 0 && (
                       <div className={styles.sources}>
                         {message.sources.map((source, i) => {
+                          const info = sourceInfo(source);
                           const href = sourceHref(source);
-
                           return href ? (
                             <a
                               key={i}
@@ -559,11 +557,13 @@ export default function Chat() {
                               rel="noreferrer"
                               className={styles.sourceChip}
                             >
-                              {sourceLabel(source)}
+                              <Icon name={info.icon} size={13} />
+                              {info.text}
                             </a>
                           ) : (
                             <span key={i} className={styles.sourceChip}>
-                              {sourceLabel(source)}
+                              <Icon name={info.icon} size={13} />
+                              {info.text}
                             </span>
                           );
                         })}
@@ -575,7 +575,9 @@ export default function Chat() {
 
               {sending && (
                 <div className={`${styles.message} ${styles.messageAssistant}`}>
-                  <div className={styles.avatar}>SB</div>
+                  <div className={styles.avatar}>
+                    <Icon name="sparkle" size={15} />
+                  </div>
                   <div className={styles.bubbleColumn}>
                     <div className={`${styles.bubble} ${styles.typingBubble}`}>
                       <span className={styles.dot} />
@@ -613,13 +615,13 @@ export default function Chat() {
                 onKeyDown={handleKeyDown}
                 rows={1}
               />
-
               <button
                 type="submit"
                 className={styles.sendButton}
                 disabled={sending || !input.trim()}
+                aria-label="Send message"
               >
-                {sending ? "…" : "Send"}
+                <Icon name="send" size={18} />
               </button>
             </form>
           </div>

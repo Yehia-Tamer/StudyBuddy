@@ -1,147 +1,244 @@
 .shell {
   min-height: 100svh;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1.05fr 1fr;
 }
 
-@media (max-width: 900px) {
-  .shell {
-    grid-template-columns: 1fr;
-  }
-}
+/* ------------------------------------------------------------------ */
+/* Brand panel (always a deep violet brand surface, both themes)       */
+/* ------------------------------------------------------------------ */
 
-.panel {
-  background: var(--ink);
-  color: #fff;
-  padding: 64px 56px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+.brandPanel {
   position: relative;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 46px 52px;
+  color: #fff;
+  background:
+    radial-gradient(
+      120% 80% at 12% 6%,
+      rgba(124, 92, 255, 0.4),
+      transparent 55%
+    ),
+    radial-gradient(
+      110% 90% at 94% 102%,
+      rgba(75, 195, 255, 0.22),
+      transparent 52%
+    ),
+    linear-gradient(158deg, #1b1638 0%, #0d0a1e 72%);
 }
 
-@media (max-width: 900px) {
-  .panel {
-    padding: 40px 32px;
-  }
+.brandPanel::after {
+  /* faint grid texture for depth */
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.028) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(120% 100% at 50% 0%, #000 30%, transparent 80%);
+  pointer-events: none;
 }
 
-.brand {
-  font-family: var(--font-display);
-  font-size: 20px;
+.brandTop,
+.brandBody,
+.brandFoot {
+  position: relative;
+  z-index: 1;
+}
+
+.brandTop {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.brandWordmark {
   font-weight: 600;
-  margin-bottom: 64px;
-  color: var(--highlighter);
-  opacity: 0;
-  animation: rise var(--dur-base) var(--ease-out) forwards;
-  animation-delay: 40ms;
+  font-size: 17px;
+  letter-spacing: -0.02em;
+  color: #fff;
 }
 
-@media (max-width: 900px) {
-  .brand {
-    margin-bottom: 32px;
-  }
+.brandBody {
+  margin-top: auto;
+  margin-bottom: auto;
+  padding: 40px 0;
+  max-width: 460px;
 }
 
 .headline {
-  font-size: 38px;
-  line-height: 1.18;
-  font-weight: 500;
-  max-width: 460px;
+  font-size: clamp(28px, 3vw, 40px);
+  font-weight: 600;
+  line-height: 1.12;
+  letter-spacing: -0.03em;
   color: #fff;
-  letter-spacing: -0.3px;
-  opacity: 0;
-  animation: rise var(--dur-base) var(--ease-out) forwards;
-  animation-delay: 120ms;
 }
 
-@keyframes rise {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.brandSub {
+  margin-top: 18px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.68);
+  max-width: 40ch;
 }
 
 .features {
   list-style: none;
+  margin: 36px 0 0;
   padding: 0;
-  margin: 48px 0 0;
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  max-width: 420px;
+  gap: 8px;
 }
 
-.features li {
+.feature {
   display: flex;
-  gap: 16px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-  opacity: 0;
-  animation: rise var(--dur-base) var(--ease-out) forwards;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 13px 14px;
+  border-radius: var(--r-lg);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  transition: background var(--dur-2) var(--ease);
 }
 
-.features li:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
+.feature:hover {
+  background: rgba(255, 255, 255, 0.07);
 }
 
-.features li:nth-child(1) {
-  animation-delay: 220ms;
+.featureIcon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: rgba(124, 92, 255, 0.24);
+  color: #cdbcff;
 }
-.features li:nth-child(2) {
-  animation-delay: 300ms;
-}
-.features li:nth-child(3) {
-  animation-delay: 380ms;
+
+.featureText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .featureLabel {
-  font-family: var(--font-display);
-  color: var(--highlighter);
-  font-size: 15px;
-  flex: 0 0 68px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
 }
 
 .featureDetail {
-  color: rgba(255, 255, 255, 0.72);
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.5;
+  color: rgba(255, 255, 255, 0.62);
 }
 
+.brandFoot {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.footDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 0 4px rgba(64, 224, 141, 0.16);
+}
+
+/* ------------------------------------------------------------------ */
+/* Form side (follows the theme)                                       */
+/* ------------------------------------------------------------------ */
+
 .formSide {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.formTopBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 24px;
+}
+
+.mobileBrand {
+  display: none;
+}
+
+.formWrap {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 32px;
+  padding: 24px 24px 56px;
 }
 
 .formCard {
   width: 100%;
-  max-width: 380px;
-  opacity: 0;
-  animation: rise var(--dur-base) var(--ease-out) forwards;
-  animation-delay: 160ms;
+  max-width: 396px;
+  padding: 34px 32px 32px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-2xl);
+  box-shadow: var(--shadow-lg);
+  animation: sb-rise var(--dur-3) var(--ease);
 }
 
 .eyebrow {
-  color: var(--muted);
   font-size: 13px;
-  margin-bottom: 6px;
+  font-weight: 500;
+  color: var(--accent);
+  margin-bottom: 8px;
 }
 
 .formTitle {
-  font-size: 28px;
+  font-size: 25px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
   margin-bottom: 8px;
 }
 
 .subtitle {
-  color: var(--muted);
+  color: var(--text-muted);
   font-size: 14px;
-  margin-bottom: 32px;
+  line-height: 1.55;
+  margin-bottom: 26px;
+}
+
+.formTitle + form,
+.subtitle + form {
+  margin-top: 24px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Responsive                                                          */
+/* ------------------------------------------------------------------ */
+
+@media (max-width: 940px) {
+  .shell {
+    grid-template-columns: 1fr;
+  }
+  .brandPanel {
+    display: none;
+  }
+  .mobileBrand {
+    display: inline-flex;
+  }
+  .formWrap {
+    padding: 12px 20px 48px;
+    align-items: flex-start;
+  }
+  .formCard {
+    box-shadow: var(--shadow-md);
+  }
 }

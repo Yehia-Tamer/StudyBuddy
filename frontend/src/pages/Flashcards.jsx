@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import AppShell from "../components/layout/AppShell";
+import PageHeader from "../components/PageHeader";
+import Icon from "../components/Icon";
 import {
   getFlashcards,
   generateFlashcards,
@@ -18,13 +20,13 @@ export default function Flashcards() {
   const [count, setCount] = useState(10);
   const [generating, setGenerating] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
-  const [sessionCards, setSessionCards] = useState(null); // null = nothing generated yet this visit
+  const [sessionCards, setSessionCards] = useState(null);
 
-  const [libraryCards, setLibraryCards] = useState(null); // null = not fetched yet
+  const [libraryCards, setLibraryCards] = useState(null);
   const [libraryLoading, setLibraryLoading] = useState(false);
 
   const [error, setError] = useState("");
-  const [answers, setAnswers] = useState({}); // { [flashcardId]: { value, submitting, result } }
+  const [answers, setAnswers] = useState({});
 
   useEffect(() => {
     let cancelled = false;
@@ -82,7 +84,6 @@ export default function Flashcards() {
       const created = await generateFlashcards(selectedDocIds, count);
       setSessionCards(created);
       setAnswers({});
-      // keep the library cache in sync so switching tabs shows the new cards too
       setLibraryCards((prev) => (prev === null ? null : [...created, ...prev]));
     } catch {
       setError("Could not generate flashcards from those documents.");
@@ -143,13 +144,13 @@ export default function Flashcards() {
 
   function renderCard(card, index) {
     const answerState = answers[card.id] || {};
+    const result = answerState.result;
     return (
       <article
         key={card.id}
         className={styles.card}
-        style={{ animationDelay: `${index * 60}ms` }}
+        style={{ animationDelay: `${Math.min(index, 8) * 45}ms` }}
       >
-        <span className={styles.badge}>{card.type}</span>
         <div className={styles.cardTopRow}>
           <span className={styles.badge}>{card.type}</span>
           <button
@@ -157,53 +158,61 @@ export default function Flashcards() {
             className={styles.deleteButton}
             onClick={() => handleDeleteCard(card.id)}
             disabled={deletingId === card.id}
+            aria-label="Delete flashcard"
           >
-            {deletingId === card.id ? "Deleting…" : "Delete"}
+            <Icon name="trash" size={15} />
           </button>
         </div>
+
         <p className={styles.question}>{card.question}</p>
 
-        <input
-          className={styles.answerInput}
-          type="text"
-          placeholder="Your answer"
-          value={answerState.value || ""}
-          onChange={(e) => updateAnswerValue(card.id, e.target.value)}
-          disabled={answerState.submitting}
-        />
-        <button
-          type="button"
-          className={styles.checkButton}
-          onClick={() => handleCheckAnswer(card.id)}
-          disabled={answerState.submitting || !answerState.value?.trim()}
-        >
-          {answerState.submitting ? "Checking…" : "Check answer"}
-        </button>
+        <div className={styles.answerRow}>
+          <input
+            className={styles.answerInput}
+            type="text"
+            placeholder="Your answer"
+            value={answerState.value || ""}
+            onChange={(e) => updateAnswerValue(card.id, e.target.value)}
+            disabled={answerState.submitting}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleCheckAnswer(card.id);
+            }}
+          />
+          <button
+            type="button"
+            className={styles.checkButton}
+            onClick={() => handleCheckAnswer(card.id)}
+            disabled={answerState.submitting || !answerState.value?.trim()}
+          >
+            {answerState.submitting ? "Checking…" : "Check"}
+          </button>
+        </div>
 
-        {answerState.result && !answerState.result.error && (
+        {result && !result.error && (
           <div
             className={
-              answerState.result.correct
+              result.correct
                 ? `${styles.feedback} ${styles.feedbackCorrect}`
                 : `${styles.feedback} ${styles.feedbackIncorrect}`
             }
           >
-            <p className={styles.feedbackVerdict}>
-              {answerState.result.correct ? "Correct" : "Not quite"}
-            </p>
-            <p className={styles.feedbackDetail}>
-              {answerState.result.feedback}
-            </p>
-            {!answerState.result.correct && (
+            <div className={styles.feedbackHead}>
+              <Icon name={result.correct ? "check" : "x"} size={15} />
+              <span className={styles.feedbackVerdict}>
+                {result.correct ? "Correct" : "Not quite"}
+              </span>
+            </div>
+            <p className={styles.feedbackDetail}>{result.feedback}</p>
+            {!result.correct && (
               <p className={styles.correctAnswer}>
-                Correct answer: {answerState.result.correct_answer}
+                Answer: {result.correct_answer}
               </p>
             )}
           </div>
         )}
 
-        {answerState.result?.error && (
-          <p className={styles.feedbackDetail}>
+        {result?.error && (
+          <p className={styles.gradeError}>
             Could not grade that answer. Try again.
           </p>
         )}
@@ -214,10 +223,11 @@ export default function Flashcards() {
   return (
     <AppShell>
       <div className={styles.page}>
-        <header className={styles.header}>
-          <p className={styles.eyebrow}>Test yourself</p>
-          <h1 className={styles.title}>Flashcards</h1>
-        </header>
+        <PageHeader
+          eyebrow="Test yourself"
+          title="Flashcards"
+          subtitle="Generate question-and-answer cards from your documents, then check your recall."
+        />
 
         <div className={styles.tabs}>
           <button
@@ -244,12 +254,17 @@ export default function Flashcards() {
           </button>
         </div>
 
-        {error && <div className={styles.error}>{error}</div>}
+        {error && (
+          <div className={styles.error}>
+            <Icon name="x" size={16} />
+            <span>{error}</span>
+          </div>
+        )}
 
         {view === "generate" && (
           <>
             {!docsLoading && documents.length > 0 && (
-              <div className={styles.generatePanel}>
+              <section className={styles.generatePanel}>
                 <p className={styles.generateLabel}>Generate from</p>
                 <div className={styles.docChips}>
                   {documents.map((doc) => (
@@ -263,13 +278,16 @@ export default function Flashcards() {
                       }
                       onClick={() => toggleDoc(doc.id)}
                     >
+                      {selectedDocIds.includes(doc.id) && (
+                        <Icon name="check" size={14} />
+                      )}
                       {doc.filename}
                     </button>
                   ))}
                 </div>
                 <div className={styles.generateRow}>
                   <label className={styles.countLabel}>
-                    Count
+                    Cards
                     <input
                       type="number"
                       min={1}
@@ -285,17 +303,21 @@ export default function Flashcards() {
                     onClick={handleGenerate}
                     disabled={generating}
                   >
+                    <Icon name="sparkle" size={16} />
                     {generating ? "Generating…" : "Generate flashcards"}
                   </button>
                 </div>
-              </div>
+              </section>
             )}
 
             {!docsLoading && documents.length === 0 && (
               <div className={styles.empty}>
+                <span className={styles.emptyIcon}>
+                  <Icon name="documents" size={24} />
+                </span>
                 <p className={styles.emptyTitle}>Upload a document first</p>
                 <p className={styles.emptyDetail}>
-                  Flashcards are generated from documents you've uploaded.
+                  Flashcards are generated from documents you have uploaded.
                 </p>
               </div>
             )}
@@ -310,6 +332,9 @@ export default function Flashcards() {
 
             {!generating && sessionCards === null && documents.length > 0 && (
               <div className={styles.empty}>
+                <span className={styles.emptyIcon}>
+                  <Icon name="flashcards" size={24} />
+                </span>
                 <p className={styles.emptyTitle}>Nothing generated yet</p>
                 <p className={styles.emptyDetail}>
                   Pick a document above and generate your first set.
@@ -317,16 +342,14 @@ export default function Flashcards() {
               </div>
             )}
 
-            {!generating &&
-              sessionCards !== null &&
-              sessionCards.length > 0 && (
-                <>
-                  <p className={styles.sessionLabel}>Just generated</p>
-                  <div className={styles.grid}>
-                    {sessionCards.map((card, index) => renderCard(card, index))}
-                  </div>
-                </>
-              )}
+            {!generating && sessionCards !== null && sessionCards.length > 0 && (
+              <>
+                <p className={styles.sessionLabel}>Just generated</p>
+                <div className={styles.grid}>
+                  {sessionCards.map((card, index) => renderCard(card, index))}
+                </div>
+              </>
+            )}
           </>
         )}
 
@@ -344,6 +367,9 @@ export default function Flashcards() {
               libraryCards !== null &&
               libraryCards.length === 0 && (
                 <div className={styles.empty}>
+                  <span className={styles.emptyIcon}>
+                    <Icon name="flashcards" size={24} />
+                  </span>
                   <p className={styles.emptyTitle}>No flashcards yet</p>
                   <p className={styles.emptyDetail}>
                     Switch to Generate to create your first set.
