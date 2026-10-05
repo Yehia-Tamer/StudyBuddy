@@ -19,7 +19,7 @@ services:
     build: .
     image: studybuddy-backend
     restart: unless-stopped
-    env_file: .enc
+    env_file: .env
     environment:
       DATABASE_URL: postgres://$${POSTGRES_USER}:$${POSTGRES_PASSWORD}@db:5432/$${POSTGRES_DB}
     depends_on:
