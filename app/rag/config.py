@@ -16,7 +16,14 @@ def count_tokens(text: str) -> int:
 
 # Tried in order. Each fallback is a DIFFERENT model: overload is per model,
 # so retrying the same overloaded model doesn't help.
-LLM_MODELS = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash"]
+# Chosen from a live test on the server (2026-10-05): quality first, availability last.
+# Avoid "-latest" aliases: they can silently switch to a different model.
+LLM_MODELS = [
+    "gemini-3.8-flash",       # best quality
+    "gemini-3.6-flash",       # different model, fast
+    "gemini-3.5-flash-lite",  # lite: lighter model, more spare capacity
+    "gemini-3.1-flash-lite",  # older-generation lite, final safety net
+]
 
 # Errors that make us move on to the next model. APIError is the base class of the
 # new google.genai SDK's ClientError (4xx, e.g. 429 rate limit / 404 unknown model)
