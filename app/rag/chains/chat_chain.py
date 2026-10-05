@@ -210,8 +210,8 @@ def ask_with_tools(question: str, user_id: int, document_id: int, history=None):
     last_error = None
     for _ in range(len(API_KEYS)):
         key = get_next_key()
-        llm = get_llm(key)
-        llm_with_tools = llm.bind_tools([web_search])
+        # Tools are bound inside get_llm, to every model in the fallback chain.
+        llm_with_tools = get_llm(key, tools=[web_search])
         try:
             messages = [
                 SystemMessage(content=system_prompt),
