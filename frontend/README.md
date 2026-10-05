@@ -1,16 +1,45 @@
-# React + Vite
+# StudyBuddy — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React 19 + Vite single-page app for StudyBuddy. See the [root README](../README.md) for the full project overview, features and architecture.
 
-Currently, two official plugins are available:
+## Development
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+npm install
+npm run dev        # http://localhost:5173
+```
 
-## React Compiler
+The backend should be running at `http://127.0.0.1:8000` (see the root README's Setup section).
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Other scripts: `npm run build`, `npm run preview`, `npm run lint`.
 
-## Expanding the ESLint configuration
+## API base URL
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+All requests go through one axios instance in `src/client.js`:
+
+```js
+baseURL: import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8000"
+```
+
+| Environment | `VITE_API_URL` | Result |
+|---|---|---|
+| `npm run dev` | not set | calls the backend directly at `http://127.0.0.1:8000` |
+| `npm run build` / Docker | `/api` (from `.env.production`) | calls the same origin; nginx forwards `/api/*` to the backend |
+
+`VITE_*` variables are **baked into the JavaScript at build time**, so changing them requires a rebuild. They are public (visible in the browser), so never put secrets in them.
+
+## Production (Docker)
+
+`Dockerfile` is a multi-stage build:
+
+1. **Build stage** (`node:22-alpine`): `npm ci` then `npm run build`, producing static files in `dist/`.
+2. **Serve stage** (`nginx:stable-alpine`): only `dist/` and `nginx.conf` are copied in; Node and `node_modules` don't ship.
+
+`nginx.conf`:
+
+- serves the built app, with `try_files $uri $uri/ /index.html` so React Router pages survive a refresh;
+- proxies `/api/` to `http://backend:8000/` (the trailing slash strips the `/api` prefix);
+- allows uploads up to 100 MB and waits up to 300 s for slow LLM / transcription responses;
+- caches Vite's content-hashed files in `/assets/` for a year.
+
+The image is built and run by the root `docker-compose.yml` (`docker compose up --build`). It can't run on its own, because nginx resolves the `backend` hostname, which only exists on the Compose network.

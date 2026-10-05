@@ -1,11 +1,24 @@
+import os
+
 import pytesseract
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
 from pdf2image import convert_from_path
 
-pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
-POPPLER_PATH = r"C:\poppler-26.02.0\Library\bin"
+# OCR binaries. On Linux/Docker, tesseract and poppler are installed system-wide
+# (see Dockerfile) and found on PATH, so no paths are needed. On Windows they live
+# in custom folders: override with TESSERACT_CMD / POPPLER_PATH env vars, otherwise
+# the defaults below are used.
+_ON_WINDOWS = os.name == "nt"
+TESSERACT_CMD = os.getenv("TESSERACT_CMD") or (
+    r"C:\Program Files\Tesseract-OCR\tesseract.exe" if _ON_WINDOWS else None
+)
+POPPLER_PATH = os.getenv("POPPLER_PATH") or (
+    r"C:\poppler-26.02.0\Library\bin" if _ON_WINDOWS else None  # None = use PATH
+)
+if TESSERACT_CMD:
+    pytesseract.pytesseract.tesseract_cmd = TESSERACT_CMD
 
 
 class PDFLoadError(Exception):

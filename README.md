@@ -4,7 +4,7 @@ An AI-powered, full-stack study assistant. Upload notes, lecture PDFs, slide dec
 
 The backend is a FastAPI + PostgreSQL + ChromaDB RAG pipeline built on Google Gemini (via LangChain). The frontend is a React + Vite single-page app that covers every backend feature end to end.
 
-> **Status:** Backend is feature-complete for this phase. The frontend now covers every backend feature — auth, document upload, chat, flashcards, quizzes, study plans, and cheat sheets. Automated tests, CI/CD, containerization, and deployment are still outstanding (see [Roadmap](#roadmap)).
+> **Status:** Feature-complete for this phase and deployed. The frontend covers every backend feature — auth, document upload, chat, flashcards, quizzes, study plans, and cheat sheets — and the whole stack is containerized with Docker Compose and running on an AWS EC2 instance (see [Deployment](#deployment)). Automated tests and CI/CD are still outstanding (see [Roadmap](#roadmap)).
 
 ## Contents
 
@@ -13,7 +13,8 @@ The backend is a FastAPI + PostgreSQL + ChromaDB RAG pipeline built on Google Ge
 - [How the RAG Pipeline Works](#how-the-rag-pipeline-works)
 - [Project Structure](#project-structure)
 - [About the Frontend](#about-the-frontend)
-- [Setup](#setup)
+- [Deployment](#deployment)
+- [Local Development Setup](#local-development-setup)
 - [API Overview](#api-overview)
 - [Known Simplifications / Follow-ups](#known-simplifications--follow-ups)
 - [Roadmap](#roadmap)
@@ -76,6 +77,13 @@ The backend is a FastAPI + PostgreSQL + ChromaDB RAG pipeline built on Google Ge
 - **Markdown/Math:** react-markdown + remark-gfm + remark-math + rehype-katex + katex
 - **Styling:** CSS Modules per component/page + a shared design-token stylesheet (`theme.css`)
 - **Linting:** ESLint (flat config) with `eslint-plugin-react-hooks` and `eslint-plugin-react-refresh`
+
+### Deployment
+
+- **Containers:** Docker — `python:3.12-slim` backend image (with Tesseract + Poppler), multi-stage `node:22-alpine` → `nginx:stable-alpine` frontend image
+- **Orchestration:** Docker Compose (backend, frontend, PostgreSQL 17)
+- **Reverse proxy / static hosting:** nginx
+- **Hosting:** AWS EC2
 
 ## How the RAG Pipeline Works
 
@@ -154,8 +162,15 @@ app/
 │       └── youtube_title_chain.py
 │
 alembic/                    # Migration history
+Dockerfile                  # backend image (FastAPI + Tesseract + Poppler)
+entrypoint.sh               # runs `alembic upgrade head`, then starts uvicorn
+docker-compose.yml          # db + backend + frontend services, named volumes
+.dockerignore
 
 frontend/
+├── Dockerfile               # multi-stage: Vite build → nginx
+├── nginx.conf               # serves the SPA, proxies /api/ to the backend
+├── .env.production          # VITE_API_URL=/api
 ├── index.html
 ├── vite.config.js
 ├── eslint.config.js
@@ -163,7 +178,7 @@ frontend/
 └── src/
     ├── main.jsx               # app entry, wraps App in BrowserRouter
     ├── App.jsx                 # route table
-    ├── client.js                # shared axios instance + JWT interceptor
+    ├── client.js                # shared axios instance (VITE_API_URL) + JWT interceptor
     ├── styles/
     │   ├── theme.css              # design tokens
     │   └── forms.module.css
@@ -198,7 +213,58 @@ frontend/
 
 The frontend was coded by hand by me, the project's author. Claude (Anthropic's AI assistant) was used throughout as a coding assistant — for planning components, working through bugs, and getting feedback on styling/design decisions — but the implementation itself was written by me.
 
-## Setup
+## Deployment
+
+StudyBuddy runs on an **AWS EC2** instance as three Docker Compose services:
+
+```
+Browser ──► :80  frontend (nginx)
+                 ├─ /        → built React SPA (static files)
+                 └─ /api/*   → proxy → backend:8000 (FastAPI)
+                                         └─► db:5432 (PostgreSQL 17)
+```
+
+| Service | Image / build | Notes |
+|---|---|---|
+| `frontend` | `./frontend/Dockerfile` (Vite build → nginx) | The only service exposed publicly (port 80). Serves the SPA and reverse-proxies `/api/` to the backend, so the browser talks to a single origin. |
+| `backend` | `./Dockerfile` (`python:3.12-slim`) | Not exposed to the host. `entrypoint.sh` runs `alembic upgrade head` before starting uvicorn, so migrations apply automatically on every deploy. Runs as a non-root user. |
+| `db` | `postgres:17-alpine` | Health-checked with `pg_isready`; the backend waits for it to be healthy before starting. |
+
+**How the frontend reaches the API:** `frontend/.env.production` sets `VITE_API_URL=/api`, which is baked into the build. nginx strips the `/api` prefix and forwards to `http://backend:8000/`, so API routes stay unchanged.
+
+**Persistent data** lives in named volumes, so it survives container rebuilds and restarts:
+
+| Volume | Holds |
+|---|---|
+| `postgres_data` | relational data |
+| `chroma_data` | ChromaDB vector store |
+| `uploads` | uploaded source files |
+| `hf_cache` | downloaded Hugging Face models (embeddings, reranker), so they aren't re-downloaded on every start |
+
+nginx allows uploads up to 100 MB and waits up to 300 s for the backend, which leaves room for slow work like audio transcription.
+
+### Running it with Docker Compose
+
+1. On the server (or locally), clone the repo and create a `.env` in the project root. It needs the Postgres credentials used by Compose, plus the backend variables from [Local Development Setup](#local-development-setup) (Compose sets `DATABASE_URL` itself, so it doesn't need to be in `.env`):
+   ```
+   POSTGRES_USER=<user>
+   POSTGRES_PASSWORD=<password>
+   POSTGRES_DB=studybuddy
+   SECRET_KEY=...
+   ALGORITHM=HS256
+   ACCESS_TOKEN_EXPIRE_MINUTES=30
+   GOOGLE_API_KEY_1=...
+   # ...remaining Gemini and Tavily keys
+   ```
+2. Build and start everything:
+   ```bash
+   docker compose up -d --build
+   ```
+3. The app is served on port 80. On EC2, the instance's security group must allow inbound HTTP (port 80).
+
+To ship a new version: pull the latest code on the instance and run `docker compose up -d --build` again. Volumes are kept; migrations run on startup.
+
+## Local Development Setup
 
 ### Backend
 
@@ -239,7 +305,7 @@ The frontend was coded by hand by me, the project's author. Claude (Anthropic's 
 
 5. **Run the server**
    ```bash
-   uvicorn app.main:app --reload
+   uvicorn app.main:api --reload
    ```
    Interactive docs available at `http://127.0.0.1:8000/docs`.
 
@@ -257,7 +323,7 @@ The frontend was coded by hand by me, the project's author. Claude (Anthropic's 
    npm run dev
    ```
 2. The app is served at `http://localhost:5173` (see `vite.config.js`).
-3. Make sure the backend is running at `http://127.0.0.1:8000` — that's the hardcoded `baseURL` in `src/client.js`, and it's the only origin the backend's CORS config (`app/main.py`) currently allows.
+3. Make sure the backend is running at `http://127.0.0.1:8000` — `src/client.js` falls back to that URL when `VITE_API_URL` isn't set. The backend's CORS config (`app/main.py`) allows `http://localhost:5173` for local development; in the Docker deployment, nginx serves the frontend and API from the same origin, so CORS doesn't apply.
 
 Other scripts: `npm run build`, `npm run preview`, `npm run lint`.
 
@@ -282,17 +348,21 @@ Documenting these honestly rather than hiding them — things to revisit later:
 - **Quiz grading assumes answer order matches question order** (positional list, not keyed by question ID) — the frontend submits answers in `activeQuiz.questions` order to match, but it's fragile if that assumption ever breaks.
 - **Chroma and Postgres are not automatically kept in sync** — deleting a document via the API cleans up both, but any manual DB surgery (e.g. dropping tables directly) will leave orphaned vectors in Chroma with no corresponding Postgres row. Always prefer the API's delete endpoints over manual SQL.
 - **Login returns `404` for both an unknown username and a wrong password** (`app/repository/auth.py`), rather than the more conventional `401` — a minor inconsistency worth revisiting.
-- **The frontend's API base URL is hardcoded** to `http://127.0.0.1:8000` in `src/client.js` rather than coming from an environment variable — fine for local dev, not yet configurable for other environments.
+- **OCR binary paths are hardcoded to Windows locations** in `app/rag/loaders/pdf_loader.py` (`C:\Program Files\Tesseract-OCR\...` and `C:\poppler-...`). The Docker image installs Tesseract and Poppler on Linux, but these paths don't exist there, so the scanned-PDF OCR fallback fails in the container until the paths come from environment variables (or are left unset so the system binaries on `PATH` are used). Text-based PDFs are unaffected.
 - **No mobile navigation yet** — the sidebar is hidden below 900px (`AppShell.module.css`) with no mobile-friendly replacement; the app is desktop-first for now.
 - **No automated tests yet**, backend or frontend — testing so far has been manual (`/docs`, Postman, and clicking through the UI).
-- **No CI/CD, containerization, or deployment yet.**
+- **No CI/CD yet** — deploys are manual (`docker compose up -d --build` on the EC2 instance).
+- **Served over plain HTTP** — nginx listens on port 80 only, so there's no HTTPS yet. Since login sends credentials and the JWT travels on every request, TLS (a domain plus a certificate) is the next deployment step.
 
 ## Roadmap
 
 - [ ] Multimodal document understanding (reasoning over images/diagrams/charts within PDFs and PPTX, not just OCR'd text)
 - [ ] Mobile-responsive navigation for the frontend
-- [ ] Docker + docker-compose
-- [ ] Deploy to Railway/Render
+- [x] Docker + docker-compose
+- [x] Deploy to AWS EC2
+- [ ] HTTPS (domain + TLS certificate)
+- [ ] CI/CD with GitHub Actions (build, push to ECR, deploy to EC2)
+- [ ] Make OCR binary paths configurable so scanned-PDF OCR works in the container
 - [ ] Automated tests (backend and frontend)
 - [ ] Revisit quiz answer-ordering fragility
 - [ ] Handwritten notes via photo upload (OCR)
