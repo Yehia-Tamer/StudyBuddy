@@ -152,8 +152,15 @@ export default function Documents() {
       setSelectedFile(null);
       setUrlValue("");
       setFileInputKey((prev) => prev + 1);
-    } catch {
-      setError("Could not upload that document. Try again.");
+    } catch (err) {
+      // Show FastAPI's HTTPException detail when there is one (a string).
+      // 422 validation errors send a list instead, so fall back for those.
+      const detail = err.response?.data?.detail;
+      setError(
+        typeof detail === "string"
+          ? detail
+          : "Could not upload that document. Try again."
+      );
     } finally {
       setUploading(false);
     }

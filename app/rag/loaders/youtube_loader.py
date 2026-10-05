@@ -1,11 +1,27 @@
 import re
 from youtube_transcript_api import YouTubeTranscriptApi
-from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptFound
+from youtube_transcript_api._errors import (
+    TranscriptsDisabled,
+    NoTranscriptFound,
+    RequestBlocked,
+)
 from langchain_core.documents import Document
 
 
 class YoutubeTranscriptError(Exception):
     pass
+
+
+class YoutubeBlockedError(YoutubeTranscriptError):
+    """YouTube refused the request because of where it came from (e.g. a cloud server IP)."""
+
+    pass
+
+
+BLOCKED_MESSAGE = (
+    "YouTube import isn't available on this server right now: YouTube blocks "
+    "requests coming from cloud servers. Try uploading the video's audio instead."
+)
 
 
 def get_video_id(url: str) -> str | None:
@@ -28,31 +44,35 @@ def fetch_transcript(url: str):
     if not video_id:
         raise YoutubeTranscriptError(f"Could not find a video ID from the url: {url}")
 
+    # All network calls (listing AND fetching) live inside the try, so a block
+    # raised by either one is caught. RequestBlocked must come before the
+    # generic `except Exception`: Python uses the first matching handler.
     try:
         api = YouTubeTranscriptApi()
         transcript_list = api.list(video_id)
+
+        transcript_data = None
+        for t in transcript_list:
+            if t.language_code == "en":
+                if not t.is_generated:
+                    transcript_data = t.fetch()
+                    break
+                elif transcript_data is None:
+                    transcript_data = t.fetch()
+
+    except RequestBlocked as e:  # also covers IpBlocked (a subclass)
+        raise YoutubeBlockedError(BLOCKED_MESSAGE) from e
     except (TranscriptsDisabled, NoTranscriptFound) as e:
         raise YoutubeTranscriptError(
-            f"No transcript available for the video with ID {video_id}: {e}"
-        )
-
+            "This video has no transcript available."
+        ) from e
     except Exception as e:
-        raise YoutubeTranscriptError(f"Failed to fetch transcript from the video: {e}")
-
-    transcript_data = None
-
-    for t in transcript_list:
-        if t.language_code == "en":
-            if not t.is_generated:
-                transcript_data = t.fetch()
-                break
-            elif transcript_data is None:
-                transcript_data = t.fetch()
+        raise YoutubeTranscriptError(
+            f"Failed to fetch transcript from the video: {e}"
+        ) from e
 
     if transcript_data is None:
-        raise YoutubeTranscriptError(
-            f"No english transcript found for the video {video_id}"
-        )
+        raise YoutubeTranscriptError("This video has no English transcript.")
 
     return transcript_data
 

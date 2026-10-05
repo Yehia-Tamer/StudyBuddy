@@ -12,8 +12,9 @@ from app.rag.loaders.pdf_loader import load_and_split_pdf, PDFLoadError
 from app.rag.loaders.youtube_loader import (
     get_video_id,
     fetch_transcript,
-    load_youtube_document,
+    chunk_transcript_with_timestamps,
     YoutubeTranscriptError,
+    YoutubeBlockedError,
 )
 from app.rag.loaders.web_loader import load_web_document, WebArticleError
 from app.rag.loaders.audio_loader import AudioTranscriptError, load_audio_document
@@ -82,18 +83,29 @@ def create_pdf_document(file: UploadFile, user_id: int, db: Session) -> models.D
 
 
 def create_youtube_document(url: str, user_id: int, db: Session) -> models.Document:
-    transcript_data = fetch_transcript(url)
-    transcript = " ".join(snippet.text for snippet in transcript_data)
-    response = generate_youtube_title(transcript)
-    video_id = get_video_id(url)
-    if not video_id:
+    # 1. Validate first: a bad link should fail fast, with no network calls.
+    if not get_video_id(url):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Not a valid YouTube URL"
         )
+
+    # 2. Fetch the transcript ONCE, inside a try, mapping errors to status codes.
     try:
-        chunks = load_youtube_document(url)
+        transcript_data = fetch_transcript(url)
+    except YoutubeBlockedError as e:
+        # Not the user's fault: the server can't reach YouTube right now.
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e)
+        )
     except YoutubeTranscriptError as e:
+        # Something about this video/link (no captions, etc.).
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+    # 3. Reuse the same transcript for both the chunks and the title.
+    try:
+        chunks = chunk_transcript_with_timestamps(transcript_data, url=url)
+        transcript = " ".join(snippet.text for snippet in transcript_data)
+        response = generate_youtube_title(transcript)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
