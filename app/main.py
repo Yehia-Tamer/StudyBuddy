@@ -9,7 +9,6 @@ from app.routers import (
     cheat_sheets,
     flashcards,
 )
-from app import models, database
 
 api = FastAPI()
 
@@ -20,8 +19,6 @@ api.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-models.Base.metadata.create_all(bind=database.engine)
 
 
 @api.get("/", status_code=200)

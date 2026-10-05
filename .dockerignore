@@ -1,0 +1,13 @@
+.env
+.venv/
+.git/
+**/__pycache__/
+.idea/
+chroma.db/
+uploads/
+frontend/
+test*
+*.mp3
+*.pdf
+*.pptx
+Claude outputs/
