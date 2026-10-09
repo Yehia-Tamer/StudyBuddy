@@ -313,7 +313,7 @@ To ship a new version: pull the latest code on the instance and run `docker comp
 
 - **Tesseract:** install via the [UB-Mannheim build](https://github.com/UB-Mannheim/tesseract/wiki), note the install path (default `C:\Program Files\Tesseract-OCR\tesseract.exe`)
 - **Poppler:** download a [Windows release](https://github.com/oschwartz10612/poppler-windows/releases), extract, and note the `Library\bin` path
-- Update the paths in `app/rag/loaders/pdf_loader.py` if they differ from the defaults
+- `app/rag/loaders/pdf_loader.py` uses these default paths on Windows. If yours differ, set `TESSERACT_CMD` and `POPPLER_PATH` in `.env`. On Linux/Docker no paths are needed: the binaries installed by the Dockerfile are found on `PATH`
 
 ### Frontend
 
@@ -348,7 +348,6 @@ Documenting these honestly rather than hiding them — things to revisit later:
 - **Quiz grading assumes answer order matches question order** (positional list, not keyed by question ID) — the frontend submits answers in `activeQuiz.questions` order to match, but it's fragile if that assumption ever breaks.
 - **Chroma and Postgres are not automatically kept in sync** — deleting a document via the API cleans up both, but any manual DB surgery (e.g. dropping tables directly) will leave orphaned vectors in Chroma with no corresponding Postgres row. Always prefer the API's delete endpoints over manual SQL.
 - **Login returns `404` for both an unknown username and a wrong password** (`app/repository/auth.py`), rather than the more conventional `401` — a minor inconsistency worth revisiting.
-- **OCR binary paths are hardcoded to Windows locations** in `app/rag/loaders/pdf_loader.py` (`C:\Program Files\Tesseract-OCR\...` and `C:\poppler-...`). The Docker image installs Tesseract and Poppler on Linux, but these paths don't exist there, so the scanned-PDF OCR fallback fails in the container until the paths come from environment variables (or are left unset so the system binaries on `PATH` are used). Text-based PDFs are unaffected.
 - **No mobile navigation yet** — the sidebar is hidden below 900px (`AppShell.module.css`) with no mobile-friendly replacement; the app is desktop-first for now.
 - **No automated tests yet**, backend or frontend — testing so far has been manual (`/docs`, Postman, and clicking through the UI).
 - **No CI/CD yet** — deploys are manual (`docker compose up -d --build` on the EC2 instance).
@@ -362,7 +361,7 @@ Documenting these honestly rather than hiding them — things to revisit later:
 - [x] Deploy to AWS EC2
 - [ ] HTTPS (domain + TLS certificate)
 - [ ] CI/CD with GitHub Actions (build, push to ECR, deploy to EC2)
-- [ ] Make OCR binary paths configurable so scanned-PDF OCR works in the container
+- [x] Configurable OCR binary paths (scanned-PDF OCR works in the container)
 - [ ] Automated tests (backend and frontend)
 - [ ] Revisit quiz answer-ordering fragility
 - [ ] Handwritten notes via photo upload (OCR)
