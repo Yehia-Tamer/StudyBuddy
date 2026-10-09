@@ -1,10 +1,9 @@
-from typing import List
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from starlette import status
 
-from app import schemas, oauth2, database
+from app import database, oauth2, schemas
 from app.repository import quizzes
 
 router = APIRouter(prefix="/quizzes", tags=["quizzes"])
@@ -24,7 +23,7 @@ def generate_quiz(
 
 
 @router.get(
-    "/", status_code=status.HTTP_200_OK, response_model=List[schemas.QuizResponse]
+    "/", status_code=status.HTTP_200_OK, response_model=list[schemas.QuizResponse]
 )
 def get_quizzes(
     current_user: schemas.UserResponse = Depends(oauth2.get_current_user),

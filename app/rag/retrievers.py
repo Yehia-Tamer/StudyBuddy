@@ -1,8 +1,8 @@
 from google.api_core.exceptions import ResourceExhausted
 from langchain_classic.retrievers import (
-    MultiQueryRetriever,
-    EnsembleRetriever,
     ContextualCompressionRetriever,
+    EnsembleRetriever,
+    MultiQueryRetriever,
 )
 from langchain_classic.retrievers.document_compressors import CrossEncoderReranker
 from langchain_community.cross_encoders import HuggingFaceCrossEncoder

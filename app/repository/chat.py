@@ -1,8 +1,10 @@
-from sqlalchemy.orm import Session
+import json
+
 from fastapi import HTTPException, status
+from sqlalchemy.orm import Session
+
 from app import models
 from app.rag.chains import chat_chain
-import json
 
 
 def create_conversation(user_id: int, document_id: int | None, db: Session):

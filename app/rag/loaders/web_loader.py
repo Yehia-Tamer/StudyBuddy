@@ -1,7 +1,7 @@
 import requests
 import trafilatura
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 
 class WebArticleError(Exception):

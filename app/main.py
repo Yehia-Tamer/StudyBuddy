@@ -1,13 +1,14 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from app.routers import (
     auth,
-    documents,
     chat,
-    study_plans,
-    quizzes,
     cheat_sheets,
+    documents,
     flashcards,
+    quizzes,
+    study_plans,
 )
 
 api = FastAPI()

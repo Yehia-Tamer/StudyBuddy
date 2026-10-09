@@ -1,9 +1,8 @@
 import json
 import re
 from datetime import datetime
-from typing import Optional
 
-from pydantic import BaseModel, field_validator, model_validator, ConfigDict, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, field_validator, model_validator
 
 
 class UserCreate(BaseModel):
@@ -55,12 +54,12 @@ class WebDocumentRequest(BaseModel):
 
 
 class ConversationCreate(BaseModel):
-    document_id: Optional[int] = None
+    document_id: int | None = None
 
 
 class ConversationResponse(BaseModel):
     id: int
-    document_id: Optional[int]
+    document_id: int | None
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)
 
@@ -79,12 +78,6 @@ class SourceCitation(BaseModel):
     page: int | None = None
     slide: int | None = None
 
-
-class ConversationResponse(BaseModel):
-    id: int
-    document_id: Optional[int]
-    created_at: datetime
-    model_config = ConfigDict(from_attributes=True)
 
 
 class MessageResponse(BaseModel):

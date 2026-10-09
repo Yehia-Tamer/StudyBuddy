@@ -1,6 +1,6 @@
-from pptx import Presentation
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from pptx import Presentation
 
 
 class PPTXLoadError(Exception):

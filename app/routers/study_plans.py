@@ -1,10 +1,9 @@
-from typing import List
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from starlette import status
 
-from app import schemas, oauth2, database
+from app import database, oauth2, schemas
 from app.repository import study_plans
 
 router = APIRouter(tags=["Study Plans"], prefix="/study-plans")
@@ -24,7 +23,7 @@ def create_study_plan(
 
 
 @router.get(
-    "/", status_code=status.HTTP_200_OK, response_model=List[schemas.StudyPlanResponse]
+    "/", status_code=status.HTTP_200_OK, response_model=list[schemas.StudyPlanResponse]
 )
 def get_study_plans(
     current_user: schemas.UserResponse = Depends(oauth2.get_current_user),

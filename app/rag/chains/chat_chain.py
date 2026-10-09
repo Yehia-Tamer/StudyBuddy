@@ -1,18 +1,20 @@
+import os
+
 from google.api_core.exceptions import ResourceExhausted
-from langchain_core.messages import SystemMessage, HumanMessage, ToolMessage
+from langchain_core.documents import Document
+from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
 from langchain_core.prompts import PromptTemplate
+
 from app.rag.config import format_docs, format_history, get_llm
 from app.rag.key_rotation import (
     API_KEYS,
+    QUERY_ADJ_KEYS,
     get_next_key,
     get_next_query_adj_key,
-    QUERY_ADJ_KEYS,
 )
 from app.rag.retrievers import build_hybrid_retriever, build_reranking_retriever
-from app.rag.vectorstore import get_vectorstore
 from app.rag.tools import get_web_search_tool
-from langchain_core.documents import Document
-import os
+from app.rag.vectorstore import get_vectorstore
 
 
 def build_sources(docs: list[Document]) -> list[dict]:

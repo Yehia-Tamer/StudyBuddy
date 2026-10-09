@@ -1,7 +1,6 @@
 from langchain_chroma import Chroma
-from google.api_core.exceptions import ResourceExhausted
+
 from app.rag import embeddings
-from app.rag.key_rotation import EMBEDDING_KEYS, get_next_embedding_key
 
 
 def get_vectorstore():

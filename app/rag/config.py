@@ -1,9 +1,9 @@
 import logging
 
+import tiktoken
 from google.genai import errors as genai_errors
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_google_genai import ChatGoogleGenerativeAI
-import tiktoken
 
 logger = logging.getLogger(__name__)
 

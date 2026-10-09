@@ -1,7 +1,8 @@
 # hashing.py
-import bcrypt
-import hashlib
 import base64
+import hashlib
+
+import bcrypt
 
 
 class Hash:

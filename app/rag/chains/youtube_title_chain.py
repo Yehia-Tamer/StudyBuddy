@@ -1,11 +1,10 @@
 from google.api_core.exceptions import ResourceExhausted
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.prompts import PromptTemplate
+from pydantic import BaseModel
 
 from app.rag.config import get_llm
 from app.rag.key_rotation import API_KEYS, get_next_key
-from app.rag.vectorstore import get_vectorstore
-from pydantic import BaseModel
 
 
 class YoutubeTitleLLM(BaseModel):

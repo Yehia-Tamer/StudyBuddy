@@ -1,9 +1,10 @@
 import os
 from datetime import timedelta
 
-from app import models, hashing, JWTtoken
-from starlette import status
 from fastapi import HTTPException
+from starlette import status
+
+from app import JWTtoken, hashing, models
 
 
 def register(request, db):

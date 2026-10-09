@@ -1,17 +1,16 @@
-from typing import List
 
-from fastapi import APIRouter, Depends, UploadFile, File
+from fastapi import APIRouter, Depends, File, UploadFile
 from sqlalchemy.orm import Session
 from starlette import status
 
-from app import schemas, oauth2, database
+from app import database, oauth2, schemas
 from app.repository import documents
 
 router = APIRouter(tags=["documents"], prefix="/documents")
 
 
 @router.get(
-    "/", status_code=status.HTTP_200_OK, response_model=List[schemas.DocumentResponse]
+    "/", status_code=status.HTTP_200_OK, response_model=list[schemas.DocumentResponse]
 )
 def get_all_documents(
     current_user: schemas.UserResponse = Depends(oauth2.get_current_user),

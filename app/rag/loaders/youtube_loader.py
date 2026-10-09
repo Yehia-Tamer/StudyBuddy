@@ -1,11 +1,12 @@
 import re
+
+from langchain_core.documents import Document
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api._errors import (
-    TranscriptsDisabled,
     NoTranscriptFound,
     RequestBlocked,
+    TranscriptsDisabled,
 )
-from langchain_core.documents import Document
 
 
 class YoutubeTranscriptError(Exception):
@@ -15,7 +16,6 @@ class YoutubeTranscriptError(Exception):
 class YoutubeBlockedError(YoutubeTranscriptError):
     """YouTube refused the request because of where it came from (e.g. a cloud server IP)."""
 
-    pass
 
 
 BLOCKED_MESSAGE = (

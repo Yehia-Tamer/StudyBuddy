@@ -2,8 +2,8 @@ import os
 
 import pytesseract
 from langchain_community.document_loaders import PyPDFLoader
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from pdf2image import convert_from_path
 
 # OCR binaries. On Linux/Docker, tesseract and poppler are installed system-wide

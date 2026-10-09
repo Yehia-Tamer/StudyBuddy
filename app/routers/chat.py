@@ -1,9 +1,9 @@
-from typing import List
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from starlette import status
-from app import schemas, oauth2, database
+
+from app import database, oauth2, schemas
 from app.repository import chat
 
 router = APIRouter(tags=["chat"], prefix="/conversations")
@@ -50,7 +50,7 @@ def send_message(
 @router.get(
     "/{conversation_id}/messages",
     status_code=status.HTTP_200_OK,
-    response_model=List[schemas.MessageResponse],
+    response_model=list[schemas.MessageResponse],
 )
 def get_messages(
     conversation_id: int,
@@ -63,7 +63,7 @@ def get_messages(
 @router.get(
     "/",
     status_code=status.HTTP_200_OK,
-    response_model=List[schemas.ConversationResponse],
+    response_model=list[schemas.ConversationResponse],
 )
 def get_conversations(
     current_user: schemas.UserResponse = Depends(oauth2.get_current_user),

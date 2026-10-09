@@ -2,9 +2,8 @@ from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from starlette import status
-from app import database
 
-from app import JWTtoken
+from app import JWTtoken, database
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 

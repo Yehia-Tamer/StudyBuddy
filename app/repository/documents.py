@@ -2,25 +2,24 @@ import os
 import shutil
 import tempfile
 
-from fastapi import UploadFile, HTTPException
+from fastapi import HTTPException, UploadFile
 from sqlalchemy.orm import Session
 from starlette import status
 
 from app import models
-from app.rag import vectorstore
-from app.rag.loaders.pdf_loader import load_and_split_pdf, PDFLoadError
-from app.rag.loaders.youtube_loader import (
-    get_video_id,
-    fetch_transcript,
-    chunk_transcript_with_timestamps,
-    YoutubeTranscriptError,
-    YoutubeBlockedError,
-)
-from app.rag.loaders.web_loader import load_web_document, WebArticleError
-from app.rag.loaders.audio_loader import AudioTranscriptError, load_audio_document
-from app.rag.loaders.pptx_loader import load_and_split_pptx, PPTXLoadError
-from app.rag.vectorstore import get_vectorstore, add_documents
 from app.rag.chains.youtube_title_chain import generate_youtube_title
+from app.rag.loaders.audio_loader import AudioTranscriptError, load_audio_document
+from app.rag.loaders.pdf_loader import PDFLoadError, load_and_split_pdf
+from app.rag.loaders.pptx_loader import PPTXLoadError, load_and_split_pptx
+from app.rag.loaders.web_loader import WebArticleError, load_web_document
+from app.rag.loaders.youtube_loader import (
+    YoutubeBlockedError,
+    YoutubeTranscriptError,
+    chunk_transcript_with_timestamps,
+    fetch_transcript,
+    get_video_id,
+)
+from app.rag.vectorstore import add_documents, get_vectorstore
 
 UPLOAD_DIR = "uploads"
 
@@ -76,7 +75,7 @@ def create_pdf_document(file: UploadFile, user_id: int, db: Session) -> models.D
         db.commit()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to embed document: {str(e)}",
+            detail=f"Failed to embed document: {e!s}",
         )
 
     return new_document
@@ -140,7 +139,7 @@ def create_youtube_document(url: str, user_id: int, db: Session) -> models.Docum
         db.commit()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to embed document: {str(e)}",
+            detail=f"Failed to embed document: {e!s}",
         )
 
     return new_document
@@ -317,8 +316,8 @@ def get_document(document_id: int, user_id: int, db: Session):
 
 def delete_document(document_id: int, user_id: int, db: Session):
     document = get_document(document_id, user_id, db)
-    vectorstore = get_vectorstore()
-    vectorstore.delete(
+    store = get_vectorstore()
+    store.delete(
         where={"$and": [{"user_id": user_id}, {"document_id": document_id}]}
     )
 

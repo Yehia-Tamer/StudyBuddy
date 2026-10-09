@@ -1,10 +1,9 @@
-from typing import List
 
-from fastapi import APIRouter, Depends, UploadFile, File
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from starlette import status
 
-from app import schemas, oauth2, database
+from app import database, oauth2, schemas
 from app.repository import cheat_sheets
 
 router = APIRouter(tags=["Cheat Sheets"], prefix="/cheat_sheets")
@@ -24,7 +23,7 @@ def get_cheat_sheet(
 
 
 @router.get(
-    "/", status_code=status.HTTP_200_OK, response_model=List[schemas.CheatSheetResponse]
+    "/", status_code=status.HTTP_200_OK, response_model=list[schemas.CheatSheetResponse]
 )
 def get_cheat_sheets(
     current_user: schemas.UserResponse = Depends(oauth2.get_current_user),
