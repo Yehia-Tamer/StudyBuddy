@@ -21,10 +21,10 @@ def transcribe_audio(file_path: str):
     model = get_whisper_model()
 
     try:
-        segments, info = model.transcribe(file_path)
+        segments, _info = model.transcribe(file_path)
         segments = list(segments)
     except Exception as e:
-        raise AudioTranscriptError(f"Failed to transcribe audio: {e}")
+        raise AudioTranscriptError(f"Failed to transcribe audio: {e}") from e
 
     if not segments:
         raise AudioTranscriptError("No speech detected in audio file")

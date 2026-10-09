@@ -1,0 +1,20 @@
+# Ruff config: shared by your editor, your terminal and CI, so all three agree.
+
+# Match the Python version in the Dockerfile (python:3.12-slim), not your local one,
+# so ruff never suggests syntax the production image can't run.
+target-version = "py312"
+
+[lint.flake8-bugbear]
+# B008 flags function calls in argument defaults. That's a real bug in plain Python
+# (the call runs once, at definition time), but FastAPI uses Depends()/File()/etc.
+# as markers on purpose, so tell ruff these calls are fine.
+extend-immutable-calls = [
+    "fastapi.Depends",
+    "fastapi.File",
+    "fastapi.Form",
+    "fastapi.Query",
+    "fastapi.Path",
+    "fastapi.Body",
+    "fastapi.Header",
+    "fastapi.Security",
+]

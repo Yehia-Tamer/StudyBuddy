@@ -1,0 +1,5 @@
+# Development / CI tools only. Not installed in the production Docker image.
+# Pinned so your machine and CI run exactly the same versions.
+-r requirements.txt
+pytest==9.1.1
+ruff==0.16.10

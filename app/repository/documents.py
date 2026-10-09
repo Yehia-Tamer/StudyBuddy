@@ -1,3 +1,4 @@
+import logging
 import os
 import shutil
 import tempfile
@@ -20,6 +21,8 @@ from app.rag.loaders.youtube_loader import (
     get_video_id,
 )
 from app.rag.vectorstore import add_documents, get_vectorstore
+
+logger = logging.getLogger(__name__)
 
 UPLOAD_DIR = "uploads"
 
@@ -49,6 +52,7 @@ def create_pdf_document(file: UploadFile, user_id: int, db: Session) -> models.D
     except PDFLoadError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
+        logger.exception("PDF processing failed for %s", file.filename)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to process PDF file: {e}",
@@ -68,6 +72,7 @@ def create_pdf_document(file: UploadFile, user_id: int, db: Session) -> models.D
     try:
         add_documents(chunks, user_id=user_id, document_id=new_document.id)
     except Exception as e:
+        logger.exception("Embedding failed for user %s", user_id)
         get_vectorstore().delete(
             where={"$and": [{"user_id": user_id}, {"document_id": new_document.id}]}
         )
@@ -106,6 +111,7 @@ def create_youtube_document(url: str, user_id: int, db: Session) -> models.Docum
         transcript = " ".join(snippet.text for snippet in transcript_data)
         response = generate_youtube_title(transcript)
     except Exception as e:
+        logger.exception("YouTube processing failed for %s", url)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to process YouTube Video: {e}",
@@ -132,6 +138,7 @@ def create_youtube_document(url: str, user_id: int, db: Session) -> models.Docum
     try:
         add_documents(chunks, user_id=user_id, document_id=new_document.id)
     except Exception as e:
+        logger.exception("Embedding failed for user %s", user_id)
         get_vectorstore().delete(
             where={"$and": [{"user_id": user_id}, {"document_id": new_document.id}]}
         )
@@ -151,6 +158,7 @@ def create_web_document(url: str, user_id: int, db: Session) -> models.Document:
     except WebArticleError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
+        logger.exception("Web page processing failed for %s", url)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to process URL: {e}",
@@ -179,6 +187,7 @@ def create_web_document(url: str, user_id: int, db: Session) -> models.Document:
     try:
         add_documents(chunks, user_id=user_id, document_id=document.id)
     except Exception as e:
+        logger.exception("Embedding failed for user %s", user_id)
         get_vectorstore().delete(
             where={"$and": [{"user_id": user_id}, {"document_id": document.id}]}
         )
@@ -206,6 +215,7 @@ def create_audio_document(
         except AudioTranscriptError as e:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
         except Exception as e:
+            logger.exception("Audio processing failed for %s", file.filename)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to process audio file: {e}",
@@ -232,6 +242,7 @@ def create_audio_document(
         try:
             add_documents(chunks, user_id=user_id, document_id=document.id)
         except Exception as e:
+            logger.exception("Embedding failed for user %s", user_id)
             get_vectorstore().delete(
                 where={"$and": [{"user_id": user_id}, {"document_id": document.id}]}
             )
@@ -262,6 +273,7 @@ def create_pptx_document(file: UploadFile, user_id: int, db: Session):
     except PPTXLoadError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
+        logger.exception("PowerPoint processing failed for %s", file.filename)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to process PowerPoint file: {e}",
@@ -271,7 +283,7 @@ def create_pptx_document(file: UploadFile, user_id: int, db: Session):
         user_id=user_id,
         filename=file.filename,
         source_type="pptx",
-        page_count=len(set(chunk.metadata.get("slide", 0) for chunk in chunks)),
+        page_count=len({chunk.metadata.get("slide", 0) for chunk in chunks}),
     )
 
     db.add(new_document)
@@ -281,6 +293,7 @@ def create_pptx_document(file: UploadFile, user_id: int, db: Session):
     try:
         add_documents(chunks, user_id=user_id, document_id=new_document.id)
     except Exception as e:
+        logger.exception("Embedding failed for user %s", user_id)
         get_vectorstore().delete(
             where={"$and": [{"user_id": user_id}, {"document_id": new_document.id}]}
         )

@@ -28,7 +28,7 @@ def load_pptx_slides(file_path: str) -> list[Document]:
     try:
         prs = Presentation(file_path)
     except Exception as e:
-        raise PPTXLoadError(f"Could not open PowerPoint file: {e}")
+        raise PPTXLoadError(f"Could not open PowerPoint file: {e}") from e
 
     documents = []
     for i, slide in enumerate(prs.slides):
