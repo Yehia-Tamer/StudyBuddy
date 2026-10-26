@@ -19,10 +19,10 @@ def count_tokens(text: str) -> int:
 # Chosen from a live test on the server (2026-10-05): quality first, availability last.
 # Avoid "-latest" aliases: they can silently switch to a different model.
 LLM_MODELS = [
-    "gemini-3.8-flash",       # best quality
-    "gemini-3.6-flash",       # different model, fast
-    "gemini-3.5-flash-lite",  # lite: lighter model, more spare capacity
-    "gemini-3.1-flash-lite",  # older-generation lite, final safety net
+    "gemini-3.6-flash",       # fast and reliable in today's test (~2s)
+    "gemini-3.5-flash-lite",
+    "gemini-3.1-flash-lite",
+    # "gemini-3.8-flash",     # 503/504 on all keys (2026-10-26); re-test before re-adding
 ]
 
 # Errors that make us move on to the next model. APIError is the base class of the
@@ -46,9 +46,8 @@ def _make_model(model: str, api_key: str, is_last: bool) -> ChatGoogleGenerative
         model=model,
         google_api_key=api_key,
         temperature=0.2,
-        # Fail fast on all but the last model so the fallback kicks in quickly
-        # (default is 6 attempts). Note: 1 = no retries; 0 would mean "SDK default".
-        max_retries=3 if is_last else 2,
+        timeout=30,       # seconds; a stalled call fails fast instead of hanging for minutes
+        max_retries=1,    # move to the next model/key instead of waiting on this one
         callbacks=[_ModelFailureLogger(model)],
     )
 
