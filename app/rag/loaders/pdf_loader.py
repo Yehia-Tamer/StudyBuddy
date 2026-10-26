@@ -50,5 +50,9 @@ def load_and_split_pdf(file_path: str):
 
     if len(chunks) == 0:
         raise PDFLoadError("No extractable text found in document")
+    
+    for i, chunk in enumerate(chunks):
+        chunk.metadata["source_type"] = "pdf"
+        chunk.metadata["chunk_index"] = i  
 
     return chunks
